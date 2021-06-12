@@ -6,7 +6,7 @@ gow is a golang HTTP web framework
 
 ## 项目地址
 
-[https://github.comm/zituocn/gow](https://github.comm/zituocn/gow)
+[https://github.com/zituocn/gow](https://github.com/zituocn/gow)
 
 
 ## 特性
