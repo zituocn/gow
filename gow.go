@@ -140,6 +140,11 @@ func (engine *Engine) SetAppConfig(app *AppConfig) {
 	}
 }
 
+// AddFuncMap add fn func to template func map
+func (engine *Engine) AddFuncMap(key string, fn interface{}) {
+	engine.FuncMap[key] = fn
+}
+
 // SetViews set engine.viewPath = path
 func (engine *Engine) SetViews(path string) {
 	engine.viewsPath = path
