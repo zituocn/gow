@@ -146,3 +146,15 @@ func Down2Handler(c *gow.Context) {
 http://127.0.0.1:8080/v1/down1
 http://127.0.0.1:8080/v1/down2
 ```
+
+## 更多文档
+
+* [路由详解 && 路由参数 && 路由分组](https://github.com/zituocn/gow/blob/main/docs/route.md)
+* [中间件(middleware) 使用](https://github.com/zituocn/gow/blob/main/docs/middleware.md)
+* [获取请求值](https://github.com/zituocn/gow/blob/main/docs/request.md)
+* [输出值 && JSON / XML / JSONP / YAML](https://github.com/zituocn/gow/blob/main/docs/response.md)
+* [统一配置文件](https://github.com/zituocn/gow/blob/main/docs/config.md)
+* [做一个网站 && HTML模板使用指南](https://github.com/zituocn/gow/blob/main/docs/website.md)
+* [HTML模板函数](https://github.com/zituocn/gow/blob/main/docs/html.md)
+* [文件的上传及下载](https://github.com/zituocn/gow/blob/main/docs/upload.md)
+* [lib 库介绍：logy mysql config ](https://github.com/zituocn/gow/blob/main/docs/lib.md)

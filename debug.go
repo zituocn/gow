@@ -16,6 +16,7 @@ func IsDebugging() bool {
 	return true
 }
 
+// debugPrint debugPrint
 func debugPrint(format string, values ...interface{}) {
 	if IsDebugging() {
 		if !strings.HasSuffix(format, "\n") {

@@ -1,3 +1,7 @@
+/*
+gin errors.go
+ */
+
 package gow
 
 import (

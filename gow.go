@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -120,6 +121,7 @@ func New() *Engine {
 func Default() *Engine {
 	engine := New()
 	engine.Use(Logger(), Recovery())
+	engine.NoRoute(default404Handler)
 	return engine
 }
 
@@ -321,7 +323,6 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	}
 	mt.routes = mt.addRoute(path, handlers, rc)
 	engine.trees = append(engine.trees, mt)
-
 }
 
 func (engine *Engine) allocateContext() *Context {
@@ -345,5 +346,26 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 		}
 		return
 	}
+	c.writermem.WriteHeaderNow()
+}
+
+var mimeHTML = []string{ContentHTML}
+
+func default404Handler(c *Context) {
+	c.writermem.status = http.StatusNotFound
+	c.Next()
+	if c.writermem.Written() {
+		return
+	}
+	if c.writermem.Status() == http.StatusNotFound {
+		c.writermem.Header()["Content-Type"] = mimeHTML
+		default404Page = strings.ReplaceAll(default404Page, "{version}", version)
+		_, err := c.Writer.Write([]byte(default404Page))
+		if err != nil {
+			debugPrint("cannot write message to writer during serve error: %v", err)
+		}
+		return
+	}
+
 	c.writermem.WriteHeaderNow()
 }

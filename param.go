@@ -1,6 +1,11 @@
+/*
+gin param
+ */
+
 package gow
 
-// Param is a single URL parameter, consisting of a key and a value.
+
+// Param  URL parameter store key and value
 type Param struct {
 	Key   string
 	Value string

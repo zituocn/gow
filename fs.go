@@ -1,4 +1,11 @@
+/*
+
+gin fs.go
+
+ */
+
 package gow
+
 
 import (
 	"net/http"

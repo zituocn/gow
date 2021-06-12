@@ -4,9 +4,18 @@ gow is a golang HTTP web framework
 > 借鉴和参考的项目：gin/beego/mux
 
 
-### 项目地址
+## 项目地址
 
 [https://github.comm/zituocn/gow](https://github.comm/zituocn/gow)
+
+
+## 特性
+
+* 类 `gin` 的 `Context` 封装、路由分组和 middleware，可快速入门
+* 使用 `regexp` 实现路由完全匹配，支持大小写忽略
+* 统一的配置入口(ini格式)，也可实现自己喜欢的配置方式
+* 支持服务器端渲染HTML页面，可自由扩展HTML模板函数
+* 可以自由选择封装在lib的sdk，如 mysql redis nsq rpc mem-cache oauth pay 等
 
 
 ## 1. 快速开始

@@ -1,3 +1,9 @@
+/*
+
+gin logger.go
+
+ */
+
 package gow
 
 import (
