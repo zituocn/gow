@@ -12,7 +12,7 @@ type AppConfig struct {
 	AppName       string `json:"app_name,omitempty" yaml:"app_name"`             // app name
 	RunMode       string `json:"run_mode,omitempty" yaml:"run_mode"`             // app run mode
 	HTTPAddr      string `json:"http_addr,omitempty" yaml:"http_addr"`           // http address
-	AutoRender    bool   `json:"auto_render,omitempty" yaml:"auto_render"`       //  if true load html template
+	AutoRender    bool   `json:"auto_render,omitempty" yaml:"auto_render"`       // if true load html template
 	Views         string `json:"views,omitempty" yaml:"views"`                   // html template dir
 	TemplateLeft  string `json:"template_left,omitempty" yaml:"template_left"`   // html template tag symbol
 	TemplateRight string `json:"template_right,omitempty" yaml:"template_right"` // html template tag symbol

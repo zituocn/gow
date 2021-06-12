@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-//IntDateTime IntDateTime
+// IntDateTime IntDateTime
 func IntDateTime(val int64) (ret string) {
 	if val < 1 {
 		return
@@ -15,7 +15,7 @@ func IntDateTime(val int64) (ret string) {
 	return
 }
 
-//IntDateTimeFormat DateTimeFormat
+// IntDateTimeFormat DateTimeFormat
 func IntDateTimeFormat(val int64, format string) (ret string) {
 	if val < 1 {
 		return
@@ -25,7 +25,7 @@ func IntDateTimeFormat(val int64, format string) (ret string) {
 	return
 }
 
-// TimeFormat 格式化时间显示
+// TimeFormat time.Time format
 func TimeFormat(t time.Time, format string) string {
 	res := strings.Replace(format, "MM", t.Format("01"), -1)
 	res = strings.Replace(res, "M", t.Format("1"), -1)

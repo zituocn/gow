@@ -1,3 +1,11 @@
+/*
+
+memory cache
+
+use GobEncode
+
+*/
+
 package util
 
 import (
@@ -5,9 +13,10 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	cache "github.com/patrickmn/go-cache"
 	"sync"
 	"time"
+
+	cache "github.com/patrickmn/go-cache"
 )
 
 var (

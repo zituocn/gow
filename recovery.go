@@ -1,3 +1,9 @@
+/*
+
+gin recovery.go
+
+*/
+
 package gow
 
 import (
@@ -23,8 +29,6 @@ var (
 	slash     = []byte("/")
 	stopRun   = errors.New("stop run")
 )
-
-
 
 // RecoveryFunc defines the function passable to CustomRecovery.
 type RecoveryFunc func(c *Context, err interface{})

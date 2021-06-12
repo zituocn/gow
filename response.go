@@ -1,7 +1,8 @@
 /*
+
 response.go
 
- */
+*/
 
 package gow
 
