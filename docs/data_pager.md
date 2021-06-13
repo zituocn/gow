@@ -3,14 +3,13 @@
 DataPager() 是一个gow自带的翻页处理 middleware.
 
 
-
 ## DataPager的结构
 
 ```go
 // Pager pager struct
 type Pager struct {
-    Page      int64 `json:"page"`           //当前码
-    Limit     int64 `json:"-"`              //每页条条
+    Page      int64 `json:"page"`           // 当前码
+    Limit     int64 `json:"-"`              // 每页条条
     Offset    int64 `json:"-"`       
     Count     int64 `json:"count"`          // 数据总数
     PageCount int64 `json:"page_count"`     // 总的页数

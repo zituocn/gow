@@ -99,6 +99,10 @@ func main(){
 }
 ```
 
+*提示* 
+
+你也可以通过 `r.SetAppConfig()` 来实现自己的配置格式载入。
+
 ## 更多Config使用指南
 
 
@@ -153,6 +157,7 @@ func ConfigHandler(c *gow.Context) {
     db, _ := config.GetInt64("redis::db")
     password := config.GetString("redis::password")
     isRedirect, _ := config.GetBool("system::is_redirect")
+    
     c.JSON(gow.H{
         "host":        host,
         "port":        port,

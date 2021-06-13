@@ -1,7 +1,6 @@
 # Response
 
-gow 支持多种常见格式的Response
-
+gow 使用 ` gow.Context ` 中的方法来向用户响应不同的数据
 
 ```sh
 JSON XML Text JSONP YAML File
@@ -24,7 +23,7 @@ func GetUser(c *gow.Context) {
 
 ## 更多方法
 
-不带状态码，默认 200 
+不带状态码，默认 200
 
 * c.JSON()
 * c.XML()
@@ -40,20 +39,32 @@ func GetUser(c *gow.Context) {
 * c.ServerYMAL()
 * c.ServerString()
 
+## Response Header
+
+```go
+func (c *Context) Header(key, value string)
+```
+
+```go
+c.Header("server", "gow")
+c.Header("X-Powered-By", "gow")
+c.Header("X-Gow-Version", "v0.1.0")
+```
 
 ## Redirect
 
 ```go
 func (c *Context) Redirect(code int, url string)
 ```
+
 ```go
 func GetUser(c *gow.Context) {
 
-    // 永久重定向
-    c.Redirect(301,"https://github.com/zituocn/gow")  
+// 永久重定向
+c.Redirect(301, "https://github.com/zituocn/gow")
 
-    // 临时重定向    
-    // c.Redirect(302,"https://github.com/zituocn/gow")
+// 临时重定向    
+// c.Redirect(302,"https://github.com/zituocn/gow")
 }
 ```
 

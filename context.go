@@ -286,6 +286,13 @@ func (c *Context) ParamInt(key string) (int, error) {
 	return strconv.Atoi(v)
 }
 
+// ParamInt64  return the value of the URL param
+func (c *Context) ParamInt64(key string) (int64, error) {
+	v := c.Param(key)
+	return strconv.ParseInt(v, 10, 64)
+}
+
+
 // Query return query string
 func (c *Context) Query(key string) string {
 	return c.Request.URL.Query().Get(key)
@@ -314,11 +321,6 @@ func (c *Context) formValue(key string) string {
 	return c.Request.Form.Get(key)
 }
 
-// ParamInt64  return the value of the URL param
-func (c *Context) ParamInt64(key string) (int64, error) {
-	v := c.Param(key)
-	return strconv.ParseInt(v, 10, 64)
-}
 
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
@@ -546,6 +548,29 @@ func (c *Context) ServerJSON(code int, data interface{}) {
 // JSON response JSON data
 func (c *Context) JSON(data interface{}) {
 	c.ServerJSON(http.StatusOK, data)
+}
+
+// ServerJSONP write data by jsonp format
+func (c *Context) ServerJSONP(code int, callback string, data interface{}) {
+	if code < 0 {
+		code = http.StatusOK
+	}
+	c.Header("Content-Type", ContentJavaScript)
+	c.Status(code)
+
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		c.Header("Content-Type", "")
+		c.ServerString(http.StatusServiceUnavailable, err.Error())
+	}
+	c.Writer.Write([]byte(callback + "("))
+	c.Writer.Write(bytes)
+	c.Writer.Write([]byte(");"))
+}
+
+// JSONP write date by jsonp format
+func (c *Context) JSONP(callback string, data interface{}) {
+	c.ServerJSONP(http.StatusOK, callback, data)
 }
 
 // ServerXML response xml data

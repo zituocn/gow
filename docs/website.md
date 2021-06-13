@@ -2,6 +2,9 @@
 
 gow 支持 HTML 模板服务器端渲染，使用 `golang原生` 的模板语法
 
+## *感谢*
+gow 的 HTML模板 代码，参照了 `beego` 中的处理方法
+
 
 ## 渲染 HTML 页面
 

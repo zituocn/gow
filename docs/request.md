@@ -125,6 +125,17 @@ Content-Length: 55
 }
 ```
 
+## Request Header
+
+```go
+func (c *Context) GetHeader(key string) string 
+```
+
+```go
+// 获取header中传递的 token
+token:=c.GetHeader("token")
+```
+
 ## 更多文档
 
 * [路由详解 && 路由参数 && 路由分组](https://github.com/zituocn/gow/blob/main/docs/route.md)

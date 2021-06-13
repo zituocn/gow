@@ -2,6 +2,11 @@
 
 gow 需要在代码中，手动配置路由来实现不同的访问动词和地址
 
+
+## *感谢*
+
+gow 中的 route 实现机制，融合了 gin 和 mux .
+
 ## 基本思路
 
 一个http请求
@@ -69,6 +74,7 @@ func main(){
 
 ## 正则(参数)路由
 
+
 ```go
 func main() {
     r := gow.Default()
@@ -92,6 +98,21 @@ func UserHandler(c *gow.Context) {
 curl -i http://127.0.0.1:8080/wahaha/100
 curl -i http://127.0.0.1:8080/test/101
 ```
+
+使用 `c.Param()` 获取参数
+
+```go
+func (c *Context) Param(key string) string 
+```
+
+```go
+func (c *Context) ParamInt(key string) (int, error) 
+```
+
+```go
+func (c *Context) ParamInt64(key string) (int64, error) 
+```
+
 
 ## 匹配所有
 
