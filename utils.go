@@ -45,7 +45,6 @@ func cleanPath(p string) string {
 	if len(np) > 1 && np[len(np)-1] == '/' {
 		np = np[0 : len(np)-1]
 	}
-
 	return np
 }
 
