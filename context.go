@@ -19,21 +19,17 @@ import (
 )
 
 const (
-	abortIndex int8 = math.MaxInt8 / 2
+	abortIndex        int8 = math.MaxInt8 / 2
+	ContentJSON            = "application/json; charset=utf-8"
+	ContentAsciiJSON       = "application/json"
+	ContentHTML            = "text/html; charset=utf-8"
+	ContentJavaScript      = "application/javascript; charset=utf-8"
+	ContentXML             = "application/xml; charset=utf-8"
+	ContentPlain           = "text/plain; charset=utf-8"
+	ContentYAML            = "application/x-yaml; charset=utf-8"
+	ContentDownload        = "application/octet-stream; charset=utf-8"
 
-	ContentJSON              = "application/json; charset=utf-8"
-	ContentHTML              = "text/html; charset=utf-8"
-	ContentJavaScript        = "application/javascript; charset=utf-8"
-	ContentXML               = "application/xml; charset=utf-8"
-	ContentXML2              = "text/xml; charset=utf-8"
-	ContentPlain             = "text/plain; charset=utf-8"
-	ContentPOSTForm          = "application/x-www-form-urlencoded"
-	ContentMultipartPOSTForm = "multipart/form-data"
-	ContentPROTOBUF          = "application/x-protobuf"
-	ContentMSGPACK           = "application/x-msgpack"
-	ContentMSGPACK2          = "application/msgpack"
-	ContentYAML              = "application/x-yaml; charset=utf-8"
-	ContentDownload          = "application/octet-stream; charset=utf-8"
+	secureJSONPrefix = "while(1);"
 )
 
 // Context gow context
@@ -50,7 +46,9 @@ type Context struct {
 	engine *Engine
 	params *Params
 
-	mu   sync.RWMutex
+	// for Keys
+	mu sync.RWMutex
+
 	Keys map[string]interface{}
 
 	// Data html template render Data
@@ -73,7 +71,7 @@ func (c *Context) reset() {
 	c.Keys = nil
 	c.Errors = c.Errors[0:0]
 	c.Data = make(map[interface{}]interface{}, 0)
-	//c.Pager = nil
+	c.Pager = nil
 	*c.params = (*c.params)[0:0]
 }
 
@@ -94,6 +92,11 @@ func (c *Context) HandlerNames() []string {
 		hn = append(hn, nameOfFunction(val))
 	}
 	return hn
+}
+
+// FullPath return full path
+func (c *Context) FullPath() string {
+	return c.fullPath
 }
 
 // Next c.Next method
@@ -292,7 +295,6 @@ func (c *Context) ParamInt64(key string) (int64, error) {
 	return strconv.ParseInt(v, 10, 64)
 }
 
-
 // Query return query string
 func (c *Context) Query(key string) string {
 	return c.Request.URL.Query().Get(key)
@@ -320,7 +322,6 @@ func (c *Context) formValue(key string) string {
 	}
 	return c.Request.Form.Get(key)
 }
-
 
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
@@ -491,7 +492,11 @@ func (c *Context) ServerString(code int, msg string) {
 	}
 	c.Writer.Header().Set("Content-Type", ContentPlain)
 	c.Status(code)
-	c.Writer.Write([]byte(msg))
+	_, err := c.Writer.Write([]byte(msg))
+	if err != nil {
+		c.Header("Content-Type", "")
+		c.ServerString(http.StatusServiceUnavailable, err.Error())
+	}
 }
 
 // String response text message
@@ -513,7 +518,11 @@ func (c *Context) ServerYAML(code int, data interface{}) {
 		c.Header("Content-Type", "")
 		c.ServerString(http.StatusServiceUnavailable, err.Error())
 	}
-	c.Writer.Write(bs)
+	_, err = c.Writer.Write(bs)
+	if err != nil {
+		c.Header("Content-Type", "")
+		c.ServerString(http.StatusServiceUnavailable, err.Error())
+	}
 }
 
 // YAML response yaml data
@@ -558,14 +567,23 @@ func (c *Context) ServerJSONP(code int, callback string, data interface{}) {
 	c.Header("Content-Type", ContentJavaScript)
 	c.Status(code)
 
-	bytes, err := json.Marshal(data)
+	b, err := json.Marshal(data)
 	if err != nil {
 		c.Header("Content-Type", "")
 		c.ServerString(http.StatusServiceUnavailable, err.Error())
 	}
-	c.Writer.Write([]byte(callback + "("))
-	c.Writer.Write(bytes)
-	c.Writer.Write([]byte(");"))
+
+	var buffer bytes.Buffer
+
+	buffer.WriteString(callback + "(")
+	buffer.Write(b)
+	buffer.WriteString(");")
+
+	_, err = c.Writer.Write(buffer.Bytes())
+	if err != nil {
+		c.Header("Content-Type", "")
+		c.ServerString(http.StatusServiceUnavailable, err.Error())
+	}
 }
 
 // JSONP write date by jsonp format
@@ -590,6 +608,91 @@ func (c *Context) ServerXML(code int, data interface{}) {
 // XML  response xml data
 func (c *Context) XML(data interface{}) {
 	c.ServerXML(http.StatusOK, data)
+}
+
+// ServerAsciiJSON  response ascii JSON
+func (c *Context) ServerAsciiJSON(code int, data interface{}) {
+	if code < 0 {
+		code = http.StatusOK
+	}
+	c.Header("Content-Type", ContentAsciiJSON)
+	c.Status(code)
+
+	ret, err := json.Marshal(data)
+	if err != nil {
+		c.Header("Content-Type", "")
+		c.ServerString(http.StatusServiceUnavailable, err.Error())
+	}
+
+	var buffer bytes.Buffer
+	for _, r := range BytesToString(ret) {
+		cvt := string(r)
+		if r >= 128 {
+			cvt = fmt.Sprintf("\\u%04x", int64(r))
+		}
+		buffer.WriteString(cvt)
+	}
+	_, err = c.Writer.Write(buffer.Bytes())
+	if err != nil {
+		c.Header("Content-Type", "")
+		c.ServerString(http.StatusServiceUnavailable, err.Error())
+	}
+}
+
+// AsciiJSON response ascii JSON
+func (c *Context) AsciiJSON(data interface{}) {
+	c.ServerAsciiJSON(http.StatusOK, data)
+}
+
+// ServerPureJSON response pure JSON
+func (c *Context) ServerPureJSON(code int, data interface{}) {
+	if code < 0 {
+		code = http.StatusOK
+	}
+	c.Header("Content-Type", ContentJSON)
+	c.Status(code)
+	encoder := json.NewEncoder(c.Writer)
+	encoder.SetEscapeHTML(false)
+	if c.engine.RunMode == DevMode {
+		encoder.SetIndent("", "  ")
+	}
+	if err := encoder.Encode(data); err != nil {
+		c.Header("Content-Type", "")
+		c.ServerString(http.StatusServiceUnavailable, err.Error())
+	}
+}
+
+// PureJSON response pure JSON
+func (c *Context) PureJSON(data interface{}) {
+	c.ServerPureJSON(http.StatusOK, data)
+}
+
+// ServerSecureJSON response secure JSON
+func (c *Context) ServerSecureJSON(code int, data interface{}) {
+	if code < 0 {
+		code = http.StatusOK
+	}
+	c.Header("Content-Type", ContentJSON)
+	c.Status(code)
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		c.Header("Content-Type", "")
+		c.ServerString(http.StatusServiceUnavailable, err.Error())
+	}
+
+	if bytes.HasPrefix(b, StringToBytes("[")) && bytes.HasSuffix(b, StringToBytes("]")) {
+		_, err = c.Writer.Write(StringToBytes(secureJSONPrefix))
+		if err != nil {
+			c.Header("Content-Type", "")
+			c.ServerString(http.StatusServiceUnavailable, err.Error())
+		}
+	}
+}
+
+// SecureJSON response secure JSON
+func (c *Context) SecureJSON(data interface{}) {
+	c.ServerSecureJSON(http.StatusOK, data)
 }
 
 // Render html render
@@ -639,6 +742,11 @@ func (c *Context) HTML(name string, data ...interface{}) {
 /*
 COOKIE
 */
+
+// SetSameSite  set http.SamSite
+func (c *Context) SetSameSite(samSite http.SameSite) {
+	c.sameSite = samSite
+}
 
 // SetCookie set cookie
 func (c *Context) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
@@ -721,7 +829,11 @@ func (c *Context) FileAttachment(filepath, filename string) {
 func (c *Context) Download(data []byte) {
 	c.Header("Content-Type", ContentDownload)
 	c.Writer.WriteHeader(http.StatusOK)
-	c.Writer.Write(data)
+	_, err := c.Writer.Write(data)
+	if err != nil {
+		c.Header("Content-Type", "")
+		c.ServerString(http.StatusServiceUnavailable, err.Error())
+	}
 }
 
 // DownLoadFile download data to filename
