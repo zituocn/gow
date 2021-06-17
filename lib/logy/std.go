@@ -3,20 +3,16 @@ package logy
 import (
 	"io"
 	"os"
-	"sync"
 	"time"
 )
 
 type mutexWriter struct {
-	m sync.Mutex
 	w io.Writer
 }
 
 // WriteLog write log
 func (mw *mutexWriter) WriteLog(t time.Time, level int, s []byte) {
-	mw.m.Lock()
 	mw.w.Write(s)
-	mw.m.Unlock()
 }
 
 // NewMutexWriter returns a currently safe writer.

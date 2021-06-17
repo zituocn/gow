@@ -318,6 +318,28 @@ func (engine *Engine) rebuild405Handlers() {
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
+// RouteMapInfo route map info
+type RouteMapInfo struct {
+	Method  string
+	Path    string
+	Handler string
+}
+
+// RouteMap print gow route
+func (engine *Engine) RouteMap() []*RouteMapInfo {
+	rm := make([]*RouteMapInfo, 0)
+	for _, t := range engine.trees {
+		for _, r := range t.routes {
+			rm = append(rm, &RouteMapInfo{
+				Method:  t.method,
+				Path:    r.path,
+				Handler: nameOfFunction(r.handlers[0]),
+			})
+		}
+	}
+	return rm
+}
+
 // addRoute add route to engine.trees
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	mt := methodTree{

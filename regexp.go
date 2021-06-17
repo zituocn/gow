@@ -15,6 +15,7 @@ import (
 	"strings"
 )
 
+// routeRegexp route regexp struct
 type routeRegexp struct {
 	path   string
 	regexp *regexp.Regexp
@@ -24,9 +25,11 @@ type routeRegexp struct {
 }
 
 // Match implements interface
+//	search route
 func (rr *routeRegexp) Match(path string, match *matchValue) bool {
 	// set variables.
 	rr.setMatch(path, match)
+	//return true
 	return rr.regexp.MatchString(path)
 }
 

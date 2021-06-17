@@ -471,6 +471,7 @@ func (c *Context) GetBool(key string, def ...bool) (bool, error) {
 Response
 */
 
+// Status write header statusCode
 func (c *Context) Status(code int) {
 	c.Writer.WriteHeader(code)
 }
@@ -494,8 +495,7 @@ func (c *Context) ServerString(code int, msg string) {
 	c.Status(code)
 	_, err := c.Writer.Write([]byte(msg))
 	if err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 }
 
@@ -515,13 +515,11 @@ func (c *Context) ServerYAML(code int, data interface{}) {
 
 	bs, err := yaml.Marshal(data)
 	if err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 	_, err = c.Writer.Write(bs)
 	if err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 }
 
@@ -538,19 +536,14 @@ func (c *Context) ServerJSON(code int, data interface{}) {
 	if code < 0 {
 		code = http.StatusOK
 	}
-
 	c.Header("Content-Type", ContentJSON)
 	c.Status(code)
-
 	encoder := json.NewEncoder(c.Writer)
-
 	if c.engine.RunMode == DevMode {
 		encoder.SetIndent("", "  ")
 	}
-
 	if err := encoder.Encode(data); err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 }
 
@@ -569,8 +562,7 @@ func (c *Context) ServerJSONP(code int, callback string, data interface{}) {
 
 	b, err := json.Marshal(data)
 	if err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 
 	var buffer bytes.Buffer
@@ -581,8 +573,7 @@ func (c *Context) ServerJSONP(code int, callback string, data interface{}) {
 
 	_, err = c.Writer.Write(buffer.Bytes())
 	if err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 }
 
@@ -600,8 +591,7 @@ func (c *Context) ServerXML(code int, data interface{}) {
 	c.Status(code)
 	encoder := xml.NewEncoder(c.Writer)
 	if err := encoder.Encode(data); err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 }
 
@@ -620,8 +610,7 @@ func (c *Context) ServerAsciiJSON(code int, data interface{}) {
 
 	ret, err := json.Marshal(data)
 	if err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 
 	var buffer bytes.Buffer
@@ -634,8 +623,7 @@ func (c *Context) ServerAsciiJSON(code int, data interface{}) {
 	}
 	_, err = c.Writer.Write(buffer.Bytes())
 	if err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 }
 
@@ -657,8 +645,7 @@ func (c *Context) ServerPureJSON(code int, data interface{}) {
 		encoder.SetIndent("", "  ")
 	}
 	if err := encoder.Encode(data); err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 }
 
@@ -677,15 +664,13 @@ func (c *Context) ServerSecureJSON(code int, data interface{}) {
 
 	b, err := json.Marshal(data)
 	if err != nil {
-		c.Header("Content-Type", "")
-		c.ServerString(http.StatusServiceUnavailable, err.Error())
+		c.writeServerUnavailable(err.Error())
 	}
 
 	if bytes.HasPrefix(b, StringToBytes("[")) && bytes.HasSuffix(b, StringToBytes("]")) {
 		_, err = c.Writer.Write(StringToBytes(secureJSONPrefix))
 		if err != nil {
-			c.Header("Content-Type", "")
-			c.ServerString(http.StatusServiceUnavailable, err.Error())
+			c.writeServerUnavailable(err.Error())
 		}
 	}
 }
@@ -737,6 +722,16 @@ func (c *Context) HTML(name string, data ...interface{}) {
 		return
 	}
 	c.ServerHTML(http.StatusOK, name)
+}
+
+// writeServerUnavailable
+func (c *Context) writeServerUnavailable(text string) {
+	c.Writer.Header().Set("Content-Type", ContentPlain)
+	c.Status(http.StatusServiceUnavailable)
+	_, err := c.Writer.Write([]byte(text))
+	if err != nil {
+		debugPrint("c.Write.write Error: %v ", err)
+	}
 }
 
 /*

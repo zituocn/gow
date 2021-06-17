@@ -65,6 +65,7 @@ func DataPager() HandlerFunc {
 }
 
 // ServerDataJSON response JSON format
+//	statusCode httpStatusCode
 //	like:  c.ServerDataJSON(401,1,"UnAuthorized")
 func (c *Context) ServerDataJSON(statusCode int, args ...interface{}) {
 	var (
