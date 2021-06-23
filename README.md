@@ -142,11 +142,11 @@ Content-Length: 67
 
 ## 3. 感谢
 
-* [beego](https://github.com/beego/beego)
-* [gin](https://github.com/gin-gonic/gin)
-* [mux](https://github.com/gorilla/mux)
-* [gorm](https://github.com/go-gorm/gorm)
-* [gini](https://github.com/gkzy/gini)
+* [beego](https://github.com/beego/beego) -> 参考了1.x中的HTML模板设计 
+* [gin](https://github.com/gin-gonic/gin) -> 参考了 `engine` 和 `Context` 设计
+* [mux](https://github.com/gorilla/mux)   -> 参考了 路由设计
+* [gorm](https://github.com/go-gorm/gorm) -> 推荐使用 gorm
+* [gini](https://github.com/gkzy/gini)     -> 用来操作 `ini` 格式的配置文件
 
 ## 4. License
 

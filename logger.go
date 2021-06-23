@@ -2,12 +2,11 @@
 
 gin logger.go
 
- */
+*/
 
 package gow
 
 import (
-	"fmt"
 	"github.com/mattn/go-isatty"
 	"github.com/zituocn/gow/lib/logy"
 	"net/http"
@@ -172,7 +171,8 @@ func Logger() HandlerFunc {
 				// Truncate in a golang < 1.8 safe way
 				param.Latency = param.Latency - param.Latency%time.Second
 			}
-			info := fmt.Sprintf("%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
+
+			logy.Infof("%s %3d %s| %13v | %15s |%s %-7s %s %s%s",
 				statusColor, param.StatusCode, resetColor,
 				param.Latency,
 				param.ClientIP,
@@ -180,8 +180,6 @@ func Logger() HandlerFunc {
 				param.Path,
 				param.ErrorMessage,
 			)
-
-			logy.Info(info)
 		}
 
 	}

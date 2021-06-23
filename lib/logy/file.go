@@ -1,3 +1,10 @@
+/*
+
+file.go
+日志文件存储实现
+
+*/
+
 package logy
 
 import (
@@ -9,7 +16,6 @@ import (
 	"time"
 )
 
-// StorageType 文件存储类型
 type StorageType int
 
 const (
@@ -23,12 +29,15 @@ const (
 	// StorageTypeDay 按天存储
 	StorageTypeDay
 
-	// StorageTypeMonth 按月份存储
+	// StorageTypeMonth 按月存储
 	StorageTypeMonth
 )
 
+func (s StorageType) getFileFormat() string {
+	return formats[s]
+}
+
 var (
-	//formats 文件存储
 	formats = map[StorageType]string{
 		StorageTypeMinutes: "2006-01-02-15-04",
 		StorageTypeHour:    "2006-01-02-15",
@@ -36,99 +45,89 @@ var (
 		StorageTypeMonth:   "2006-01",
 	}
 
-	//defaultMaxDay 默认最大保存天数
+	// defaultMaxDay 日志文件的默认最大保存天数
+	// 7天之外的文件，会被自动清理
 	defaultMaxDay = 7
 )
 
-// getFileFormat 获取文件存储格式
-func (s StorageType) getFileFormat() string {
-	return formats[s]
-}
-
-// SetFileFormat 设置文件存储格式
-func SetFileFormat(s StorageType, format string) {
-	formats[s] = format
-}
-
-// FileWriterOptions FileWriterOptions
+// FileWriterOptions FileWrite 参数
 type FileWriterOptions struct {
-	StorageType   StorageType //存储类型
-	StorageMaxDay int         //最大保存天数
-	Dir           string      //目录
-	Prefix        string      //前缀
-	date          string      //日期
+
+	// StorageType 存储时间类型
+	StorageType StorageType
+
+	// StorageMaxDay 日志最大保存天数
+	StorageMaxDay int
+
+	// Dir 保存目录
+	Dir string
+
+	// Prefix 前缀
+	Prefix string
+
+	// date 日期
+	date string
 }
 
-// FileWriter 文件存储实现
+// FileWriter 日志文件存储实现
 type FileWriter struct {
 	FileWriterOptions
-	sync.Mutex
+	mu   *sync.Mutex
 	file *os.File
 }
 
-// WriteLog 接口实现
-func (fw *FileWriter) WriteLog(t time.Time, level int, b []byte) {
-	fw.Lock()
-	fw.writeFile(t)
-	fw.file.Write(b)
-	fw.Unlock()
+// NewFileWriter return a new FileWriter
+//	param: opts
+func NewFileWriter(opts ...FileWriterOptions) *FileWriter {
+	opt := prepareFileWriterOption(opts)
+	fw := &FileWriter{
+		FileWriterOptions: opt,
+		mu:                &sync.Mutex{},
+	}
+	if fw.Dir[len(fw.Dir)-1:] != "/" {
+		fw.Dir = fw.Dir + "/"
+	}
+
+	fw.clearLogFile()
+	go fw.startTimer()
+	return fw
 }
 
-func (fw *FileWriter) writeFile(t time.Time) {
-	newDate := t.Format(fw.StorageType.getFileFormat())
-	if fw.date != newDate && fw.file != nil {
+// WriteLog write []byte to file
+func (fw *FileWriter) WriteLog(now time.Time, level int, b []byte) {
+	fw.mu.Lock()
+	fw.writeFile(now)
+	fw.file.Write(b)
+	fw.mu.Unlock()
+}
+
+// writeFile write file to directory
+func (fw *FileWriter) writeFile(now time.Time) {
+	date := now.Format(fw.StorageType.getFileFormat())
+	if fw.date != date && fw.file != nil {
 		fw.file.Close()
 		fw.file = nil
 	}
+
 	if fw.file == nil {
-		//目录
 		dir := filepath.Dir(fw.Dir)
 		err := os.MkdirAll(dir, 755)
 		if err != nil {
 			panic(err)
 		}
-		fileName := fmt.Sprintf("%s.%s.log", fw.Prefix, newDate)
+
+		fileName := fmt.Sprintf("%s.%s.log", fw.Prefix, date)
 		file, err := os.OpenFile(filepath.Join(fw.Dir, fileName), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0664)
 		if err != nil {
 			panic(err)
 		}
 		fw.file = file
-		fw.date = newDate
+		fw.date = date
 	}
+
 }
 
-// NewFileWriter return a new FileWriter
-//	struct FileWriterOptions
-func NewFileWriter(opts ...FileWriterOptions) *FileWriter {
-	opt := prepareFileWriterOption(opts)
-	fw := &FileWriter{
-		FileWriterOptions: opt,
-	}
-	if fw.Dir[len(fw.Dir)-1:] != "/" {
-		fw.Dir = fw.Dir + "/"
-	}
-	fw.clearLog()
-	go fw.startTimer()
-	return fw
-}
-
-//===============private=================
-
-func prepareFileWriterOption(opts []FileWriterOptions) FileWriterOptions {
-	var opt FileWriterOptions
-	if len(opts) > 0 {
-		opt = opts[0]
-	}
-
-	if opt.Dir == "" {
-		opt.Dir = "./"
-	}
-	if opt.StorageMaxDay <= 0 {
-		opt.StorageMaxDay = defaultMaxDay
-	}
-
-	return opt
-}
+//=========================timer and clear file===================
 
 func (fw *FileWriter) startTimer() {
 	now := time.Now()
@@ -137,14 +136,13 @@ func (fw *FileWriter) startTimer() {
 	fw.timer(second)
 }
 
-// timer
-func (fw *FileWriter) timer(seconds time.Duration) {
-	timer := time.NewTicker(seconds * time.Second)
+func (fw *FileWriter) timer(second time.Duration) {
+	timer := time.NewTicker(second * time.Second)
 	for {
 		select {
 		case <-timer.C:
 			{
-				fw.clearLog()
+				fw.clearLogFile()
 				nextTimer := time.NewTicker(3600 * time.Second)
 				for {
 					select {
@@ -160,15 +158,15 @@ func (fw *FileWriter) timer(seconds time.Duration) {
 	}
 }
 
-// clearLog() remove dir logs file
-func (fw *FileWriter) clearLog() {
+// clearLogFile delete the log file in directory fw.Dir
+func (fw *FileWriter) clearLogFile() {
 	files := getDirFiles(fw.Dir)
 	now := time.Now()
 	for _, item := range files {
 		modTime := item.ModTime
 		flag := modTime.Add(time.Hour * 24 * time.Duration(fw.StorageMaxDay-1)).Before(now)
 		if flag {
-			os.Remove(fmt.Sprintf("%s%s", fw.Dir, item.Name))
+			os.Remove(fw.Dir + item.Name)
 		}
 	}
 }
@@ -180,7 +178,7 @@ type FileInfo struct {
 	Size    int64
 }
 
-// getDirFiles
+// getDirFiles return files
 func getDirFiles(path string) (files []*FileInfo) {
 	dir, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -196,6 +194,21 @@ func getDirFiles(path string) (files []*FileInfo) {
 			})
 		}
 	}
-
 	return
+}
+
+func prepareFileWriterOption(opts []FileWriterOptions) FileWriterOptions {
+	var opt FileWriterOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	if opt.Dir == "" {
+		opt.Dir = "./"
+	}
+	if opt.StorageMaxDay <= 0 {
+		opt.StorageMaxDay = defaultMaxDay
+	}
+
+	return opt
 }

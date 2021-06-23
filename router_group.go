@@ -14,6 +14,19 @@ import (
 	"strings"
 )
 
+var (
+	httpMethods = map[string]bool{
+		"GET":     true,
+		"POST":    true,
+		"DELETE":  true,
+		"PUT":     true,
+		"PATCH":   true,
+		"OPTIONS": true,
+		"HEAD":    true,
+		"Any":     true,
+	}
+)
+
 // H map[string]interface{}
 type H map[string]interface{}
 
@@ -69,6 +82,10 @@ func (group *RouterGroup) Handle(httpMethod, path string, handlers ...HandlerFun
 	if matches, err := regexp.MatchString("^[A-Z]+$", httpMethod); !matches || err != nil {
 		panic("http method " + httpMethod + " is not valid")
 	}
+	if ok := httpMethods[httpMethod]; !ok {
+		panic("http method " + httpMethod + " not supported")
+	}
+
 	return group.handle(httpMethod, path, handlers)
 }
 

@@ -1,42 +1,35 @@
+/*
+
+std.go
+
+default std Logger
+
+use:
+
+	logy.Info("");
+	logy.Infof("%s",v)
+	logy.SetOutput(...)
+
+*/
+
 package logy
 
 import (
-	"io"
+	"bytes"
 	"os"
-	"time"
 )
-
-type mutexWriter struct {
-	w io.Writer
-}
-
-// WriteLog write log
-func (mw *mutexWriter) WriteLog(t time.Time, level int, s []byte) {
-	mw.w.Write(s)
-}
-
-// NewMutexWriter returns a currently safe writer.
-func NewMutexWriter(w io.Writer) Writer {
-	return writer{w: w}
-}
 
 var std *Logger
 
 func init() {
-	std = NewLogger(NewMutexWriter(os.Stdout), LstdFlags, LevelDebug)
-	std.SetCallDepth(std.CallDepth() + 1)
+	std = NewLogger(WithColor(NewWriter(os.Stdout)), StdFlags, LevelDebug)
+	std.SetCallDepth(std.GetCallDepth() + 1)
 }
 
-func Flags() int {
-	return std.Flags()
-}
+//============ set /get ==============
 
 func SetFlags(flag int) {
 	std.SetFlags(flag)
-}
-
-func SetLevel(level int) {
-	std.SetLevel(level)
 }
 
 func SetOutput(w Writer, prefix string) {
@@ -47,48 +40,60 @@ func SetCallDepth(depth int) {
 	std.SetCallDepth(depth)
 }
 
-func CallDepth() int {
-	return std.CallDepth()
+func GetWriterType() string {
+	return std.GetWriterType()
 }
 
-func Debug(v ...interface{}) {
-	std.Debug("%v", v...)
-}
+// =============== logy.Info ==============
 
+// Info info v
+//	logy.Info("test")
 func Info(v ...interface{}) {
-	std.Info("%v", v...)
+	std.Info(getFormat(len(v)), v...)
 }
 
-func Notice(v ...interface{}) {
-	std.Notice("%v", v...)
+// Debug debug v
+func Debug(v ...interface{}) {
+	std.Debug(getFormat(len(v)), v...)
 }
 
-func Warn(v ...interface{}) {
-	std.Warn("%v", v...)
-}
-
+// Error Error v
 func Error(v ...interface{}) {
-	std.Error("%v", v...)
+	std.Error(getFormat(len(v)), v...)
 }
 
-func Panic(v ...interface{}) {
-	std.Panic("%v", v...)
+// Warn Warn v
+func Warn(v ...interface{}) {
+	std.Warn(getFormat(len(v)), v...)
 }
 
+// Fatal Fatal v
 func Fatal(v ...interface{}) {
-	std.Fatal("%v", v...)
+	std.Fatal(getFormat(len(v)), v...)
 }
 
-func Debugf(format string, v ...interface{}) {
-	std.Debug(format, v...)
+// Panic Panic v
+func Panic(v ...interface{}) {
+	std.Panic(getFormat(len(v)), v...)
 }
 
+// Notice Notice v
+func Notice(v ...interface{}) {
+	std.Notice(getFormat(len(v)), v...)
+}
+
+// Infof need format
+//	logy.Infof("user :%s",user.Username)
 func Infof(format string, v ...interface{}) {
 	std.Info(format, v...)
 }
 
 func Noticef(format string, v ...interface{}) {
 	std.Notice(format, v...)
+}
+
+func Debugf(format string, v ...interface{}) {
+	std.Debug(format, v...)
 }
 
 func Warnf(format string, v ...interface{}) {
@@ -105,4 +110,12 @@ func Panicf(format string, v ...interface{}) {
 
 func Fatalf(format string, v ...interface{}) {
 	std.Fatal(format, v...)
+}
+
+func getFormat(length int) string {
+	buffer := &bytes.Buffer{}
+	for i := 0; i < length; i++ {
+		buffer.WriteString("%v ")
+	}
+	return buffer.String()
 }
