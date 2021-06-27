@@ -60,10 +60,11 @@ func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.status = defaultStatus
 }
 
+// WriteHeader write header
 func (w *responseWriter) WriteHeader(code int) {
 	if code > 0 && w.status != code {
 		if w.Written() {
-			//debugPrint("[WARNING] Headers were already written. Wanted to override status code %d with %d", w.status, code)
+			debugPrint("[WARNING] Headers were already written. Wanted to override status code %d with %d", w.status, code)
 		}
 		w.status = code
 	}
@@ -77,6 +78,7 @@ func (w *responseWriter) WriteHeaderNow() {
 	}
 }
 
+// Write write []byte
 func (w *responseWriter) Write(data []byte) (n int, err error) {
 	w.WriteHeaderNow()
 	n, err = w.ResponseWriter.Write(data)
@@ -84,6 +86,7 @@ func (w *responseWriter) Write(data []byte) (n int, err error) {
 	return
 }
 
+// WriteString write string
 func (w *responseWriter) WriteString(s string) (n int, err error) {
 	w.WriteHeaderNow()
 	n, err = io.WriteString(w.ResponseWriter, s)
@@ -91,10 +94,12 @@ func (w *responseWriter) WriteString(s string) (n int, err error) {
 	return
 }
 
+// Status return response status code
 func (w *responseWriter) Status() int {
 	return w.status
 }
 
+// Size return response size
 func (w *responseWriter) Size() int {
 	return w.size
 }

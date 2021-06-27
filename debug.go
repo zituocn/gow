@@ -1,14 +1,14 @@
 package gow
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 )
 
 var (
-	DefaultWriter io.Writer = os.Stdout
+	DefaultWriter      io.Writer = os.Stdout
 	DefaultErrorWriter io.Writer = os.Stderr
 )
 
@@ -17,11 +17,12 @@ func IsDebugging() bool {
 }
 
 // debugPrint debugPrint
-func debugPrint(format string, values ...interface{}) {
-	if IsDebugging() {
-		if !strings.HasSuffix(format, "\n") {
-			format += "\n"
-		}
-		fmt.Fprintf(DefaultWriter, "[gow-debug] "+format, values...)
+//	debugPrint(123,456,"abc")
+func debugPrint(values ...interface{}) {
+	var buffer bytes.Buffer
+	buffer.WriteString("[gow-debug] ")
+	for i := 0; i < len(values); i++ {
+		buffer.WriteString("%v ")
 	}
+	fmt.Fprintf(DefaultWriter, buffer.String(), values...)
 }

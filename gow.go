@@ -37,8 +37,10 @@ var (
 //	func(ctx *Context)
 type HandlerFunc func(ctx *Context)
 
+// HandlersChain []HandlerFunc
 type HandlersChain []HandlerFunc
 
+// Last last handler func
 func (c HandlersChain) Last() HandlerFunc {
 	if length := len(c); length > 0 {
 		return c[length-1]
@@ -169,7 +171,6 @@ func (engine *Engine) Run(args ...interface{}) (err error) {
 	if engine.AutoRender {
 		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
 	}
-
 	if engine.RunMode == DevMode {
 		fmt.Printf("%s\n", logo)
 	}
@@ -325,7 +326,15 @@ type RouteMapInfo struct {
 	Handler string
 }
 
-// RouteMap print gow route
+// PrintRouteMap print route map
+func (engine *Engine) PrintRouteMap() {
+	routeMap := engine.RouteMap()
+	for _, item := range routeMap {
+		fmt.Printf(" %6s  %20s %5s %s \n", item.Method, item.Path, " ", item.Handler)
+	}
+}
+
+// RouteMap return  gow route
 func (engine *Engine) RouteMap() []*RouteMapInfo {
 	rm := make([]*RouteMapInfo, 0)
 	for _, t := range engine.trees {
@@ -333,7 +342,7 @@ func (engine *Engine) RouteMap() []*RouteMapInfo {
 			rm = append(rm, &RouteMapInfo{
 				Method:  t.method,
 				Path:    r.path,
-				Handler: nameOfFunction(r.handlers[0]),
+				Handler: nameOfFunction(r.handlers[len(r.handlers)-1]),
 			})
 		}
 	}

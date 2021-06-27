@@ -278,6 +278,10 @@ func (c *Context) IsWeChat() bool {
 	return strings.Contains(strings.ToLower(c.UserAgent()), strings.ToLower("MicroMessenger"))
 }
 
+/*
+route param
+*/
+
 // Param return the value of the URL param.
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
