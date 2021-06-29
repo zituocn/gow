@@ -61,7 +61,7 @@ type Context struct {
 	sameSite http.SameSite
 }
 
-//reset reset Context
+// reset reset Context
 func (c *Context) reset() {
 	c.Writer = &c.writermem
 	c.Params = c.Params[0:0]
@@ -327,11 +327,14 @@ func (c *Context) formValue(key string) string {
 	return c.Request.Form.Get(key)
 }
 
+// File response file
+//	support: text image bin ..
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
-// GetString 按key返回字串值，可以设置default值
+// GetString return string
+//	def: default value
 func (c *Context) GetString(key string, def ...string) string {
 	if v := c.formValue(key); v != "" {
 		return v
@@ -357,7 +360,8 @@ func (c *Context) GetStrings(key string, def ...[]string) []string {
 	return defaultDef
 }
 
-// GetInt return int
+// GetInt return int and error
+//	def default value
 func (c *Context) GetInt(key string, def ...int) (int, error) {
 	v := c.formValue(key)
 	if len(v) == 0 && len(def) > 0 {
@@ -366,7 +370,7 @@ func (c *Context) GetInt(key string, def ...int) (int, error) {
 	return strconv.Atoi(v)
 }
 
-// GetInt8 GetInt8
+// GetInt8 return int8 and error
 //	-128~127
 func (c *Context) GetInt8(key string, def ...int8) (int8, error) {
 	v := c.formValue(key)
@@ -377,7 +381,7 @@ func (c *Context) GetInt8(key string, def ...int8) (int8, error) {
 	return int8(i64), err
 }
 
-//GetUint8 GetUint8
+//GetUint8 return uint8 and error
 //	0~255
 func (c *Context) GetUint8(key string, def ...uint8) (uint8, error) {
 	v := c.formValue(key)
@@ -388,7 +392,7 @@ func (c *Context) GetUint8(key string, def ...uint8) (uint8, error) {
 	return uint8(i64), err
 }
 
-// GetInt16 GetInt16
+// GetInt16 return int16 and error
 //	-32768~32767
 func (c *Context) GetInt16(key string, def ...int16) (int16, error) {
 	v := c.formValue(key)
@@ -399,7 +403,7 @@ func (c *Context) GetInt16(key string, def ...int16) (int16, error) {
 	return int16(i64), err
 }
 
-// GetUint16 GetUint16
+// GetUint16 return uint16 and error
 //	0~65535
 func (c *Context) GetUint16(key string, def ...uint16) (uint16, error) {
 	v := c.formValue(key)
@@ -410,7 +414,7 @@ func (c *Context) GetUint16(key string, def ...uint16) (uint16, error) {
 	return uint16(i64), err
 }
 
-//GetInt32 GetInt32
+//GetInt32 return int32 and error
 //	-2147483648~2147483647
 func (c *Context) GetInt32(key string, def ...int32) (int32, error) {
 	v := c.formValue(key)
@@ -421,7 +425,7 @@ func (c *Context) GetInt32(key string, def ...int32) (int32, error) {
 	return int32(i64), err
 }
 
-// GetUint32 GetUint32
+// GetUint32 return uint32 and error
 //	0~4294967295
 func (c *Context) GetUint32(key string, def ...uint32) (uint32, error) {
 	v := c.formValue(key)
@@ -432,7 +436,7 @@ func (c *Context) GetUint32(key string, def ...uint32) (uint32, error) {
 	return uint32(i64), err
 }
 
-// GetInt64 GetInt64
+// GetInt64 return int64 and error
 //	-9223372036854775808~9223372036854775807
 func (c *Context) GetInt64(key string, def ...int64) (int64, error) {
 	v := c.formValue(key)
@@ -442,7 +446,7 @@ func (c *Context) GetInt64(key string, def ...int64) (int64, error) {
 	return strconv.ParseInt(v, 10, 64)
 }
 
-// GetUint64 GetUint64
+// GetUint64 return uint64 and error
 //	0~18446744073709551615
 func (c *Context) GetUint64(key string, def ...uint64) (uint64, error) {
 	v := c.formValue(key)
@@ -453,7 +457,7 @@ func (c *Context) GetUint64(key string, def ...uint64) (uint64, error) {
 	return i64, err
 }
 
-// GetFloat64 GetFloat64
+// GetFloat64 return float64 and error
 func (c *Context) GetFloat64(key string, def ...float64) (float64, error) {
 	v := c.formValue(key)
 	if len(v) == 0 && len(def) > 0 {
@@ -462,7 +466,7 @@ func (c *Context) GetFloat64(key string, def ...float64) (float64, error) {
 	return strconv.ParseFloat(v, 64)
 }
 
-// GetBool GetBool
+// GetBool return bool and error
 func (c *Context) GetBool(key string, def ...bool) (bool, error) {
 	v := c.formValue(key)
 	if len(v) == 0 && len(def) > 0 {
