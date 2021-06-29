@@ -129,7 +129,7 @@ Content-Length: 67
 
 可直接运行
 
-* [github.com/zituocn/gow-demo](github.com/zituocn/gow-demo)
+* [github.com/zituocn/gow-demo](https://github.com/zituocn/gow-demo)
 
 ---
 
