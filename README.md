@@ -1,13 +1,12 @@
-# gow 
+# gow
+
 gow is a golang HTTP web framework
 
 > 借鉴和参考的项目：gin/beego/mux
 
-
 ## 项目地址
 
 [https://github.com/zituocn/gow](https://github.com/zituocn/gow)
-
 
 ## 特性
 
@@ -16,7 +15,6 @@ gow is a golang HTTP web framework
 * 统一的配置入口(ini格式)，也可实现自己喜欢的配置方式
 * 支持服务器端渲染HTML页面，可自由扩展HTML模板函数
 * 可以自由选择封装在lib的sdk，如 mysql redis nsq rpc mem-cache oauth pay 等
-
 
 ## 1. 快速开始
 
@@ -40,47 +38,47 @@ go get github.com/zituocn/gow
 package main
 
 import (
-    "github.com/zituocn/gow"
+	"github.com/zituocn/gow"
 )
 
 func main() {
-    r := gow.Default()
+	r := gow.Default()
 
-    r.GET("/", func(c *gow.Context) {
-        c.JSON(gow.H{
-            "code": 0,
-            "msg":  "success",
-        })
-    })
-    
-    //default :8080
-    r.Run()
+	r.GET("/", func(c *gow.Context) {
+		c.JSON(gow.H{
+			"code": 0,
+			"msg":  "success",
+		})
+	})
+
+	//default :8080
+	r.Run()
 }
 ```
+
 也可以写成这样
 
 ```go
 package main
 
 import (
-    "github.com/zituocn/gow"
+	"github.com/zituocn/gow"
 )
 
 func main() {
-    r := gow.Default()
-    r.GET("/", IndexHandler)
-    //default :8080
-    r.Run()  
+	r := gow.Default()
+	r.GET("/", IndexHandler)
+	//default :8080
+	r.Run()
 }
-
 
 // IndexHandler response h
 func IndexHandler(c *gow.Context) {
-    h := map[string]interface{}{
-        "project": "gow",
-        "website": "https://github.com/zituocn/gow",
-    }
-    c.JSON(h)
+	h := map[string]interface{}{
+		"project": "gow",
+		"website": "https://github.com/zituocn/gow",
+	}
+	c.JSON(h)
 }
 
 ```
@@ -124,6 +122,15 @@ Content-Length: 67
 ```sh
 在浏览器访问：http://127.0.0.1:8080
 ```
+
+---
+
+## 一些演示代码
+
+可直接运行
+
+* [github.com/zituocn/gow-demo](github.com/zituocn/gow-demo)
+
 ---
 
 ## 2. 更多文档
@@ -138,11 +145,9 @@ Content-Length: 67
 * [文件的上传及下载](https://github.com/zituocn/gow/blob/main/docs/upload.md)
 * [lib 库介绍：logy mysql config ](https://github.com/zituocn/gow/blob/main/docs/lib.md)
 
-
-
 ## 3. 感谢
 
-* [beego](https://github.com/beego/beego) -> 参考了1.x中的HTML模板设计 
+* [beego](https://github.com/beego/beego) -> 参考了1.x中的HTML模板设计
 * [gin](https://github.com/gin-gonic/gin) -> 参考了 `engine` 和 `Context` 设计
 * [mux](https://github.com/gorilla/mux)   -> 参考了 路由设计
 * [gorm](https://github.com/go-gorm/gorm) -> 推荐使用 gorm
