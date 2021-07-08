@@ -1,7 +1,8 @@
 /*
 gow.go
 
-
+sam
+2021/6/7
 */
 
 package gow
@@ -366,7 +367,10 @@ func (engine *Engine) allocateContext() *Context {
 	return &Context{engine: engine, params: &v}
 }
 
-var mimePlain = []string{ContentPlain}
+var (
+	mimePlain = []string{ContentPlain}
+	mimeHTML  = []string{ContentHTML}
+)
 
 func serveError(c *Context, code int, defaultMessage []byte) {
 	c.writermem.status = code
@@ -384,8 +388,6 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 	}
 	c.writermem.WriteHeaderNow()
 }
-
-var mimeHTML = []string{ContentHTML}
 
 func default404Handler(c *Context) {
 	c.writermem.status = http.StatusNotFound

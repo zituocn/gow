@@ -1,3 +1,14 @@
+/*
+gow session
+
+sam
+2021/6/7
+
+r:=gow.New()
+r.Use(Session())
+
+ */
+
 package gow
 
 import (
@@ -87,7 +98,7 @@ func (c *Context) DeleteSession(key string) {
 	deleteSession(key)
 }
 
-//getSession getSession
+// getSession getSession
 func getSession(key interface{}) interface{} {
 	v, ok := sessionManager.Get(sessionID, key)
 	if ok {
@@ -96,12 +107,12 @@ func getSession(key interface{}) interface{} {
 	return nil
 }
 
-//setSession setSession
+// setSession setSession
 func setSession(key, value interface{}) {
 	sessionManager.Set(sessionID, key, value)
 }
 
-//deleteSession deleteSession
+// deleteSession deleteSession
 func deleteSession(key interface{}) {
 	sessionManager.Delete(sessionID, key)
 }

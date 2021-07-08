@@ -23,11 +23,13 @@ func BytesToString(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
+// nameOfFunction return func name
+//	use reflect
 func nameOfFunction(f interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
 
-// cleanPath clear path
+// cleanPath clear route path
 func cleanPath(p string) string {
 	if p == "" {
 		return "/"
@@ -74,6 +76,10 @@ func assert1(guard bool, text string) {
 	}
 }
 
+// getAddress return HTTP addr
+//	getAddress(9090)
+//	getAddress(":9090")
+//	getAddress("127.0.0.1:9090")
 func (engine *Engine) getAddress(args ...interface{}) string {
 	var (
 		host string
@@ -101,6 +107,7 @@ func (engine *Engine) getAddress(args ...interface{}) string {
 	return addr
 }
 
+// getHostAndPort split like 127.0.0.1:8080
 func getHostAndPort(addr string) (host string, port int) {
 	addrs := strings.Split(addr, ":")
 	if len(addrs) == 1 {
@@ -110,6 +117,5 @@ func getHostAndPort(addr string) (host string, port int) {
 		host = addrs[0]
 		port, _ = strconv.Atoi(addrs[1])
 	}
-
 	return
 }
