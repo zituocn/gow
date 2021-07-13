@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -160,6 +161,143 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 }
 
 /*
+
+METADATA
+Keys
+
+*/
+
+// SetKey set k-v to c.Keys
+func (c *Context) SetKey(key string, value interface{}) {
+	c.mu.Lock()
+	if c.Keys == nil {
+		c.Keys = make(map[string]interface{})
+	}
+	c.Keys[key] = value
+	c.mu.Unlock()
+}
+
+// GetKey return value from c.Keys
+func (c *Context) GetKey(key string) (value interface{}, exist bool) {
+	c.mu.RLock()
+	value, exist = c.Keys[key]
+	c.mu.RUnlock()
+	return
+}
+
+// MustGet return interface{}
+func (c *Context) MustGet(key string) interface{} {
+	if value, exist := c.GetKey(key); exist {
+		return value
+	}
+	panic("Key \" +key+ \" dons not exist")
+}
+
+// KeyString returns the value associated with the key as a string.
+func (c *Context) KeyString(key string) (s string) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		s, _ = val.(string)
+	}
+	return
+}
+
+// KeyBool returns the value associated with the key as a boolean.
+func (c *Context) KeyBool(key string) (b bool) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		b, _ = val.(bool)
+	}
+	return
+}
+
+// KeyInt returns the value associated with the key as an integer.
+func (c *Context) KeyInt(key string) (i int) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		i, _ = val.(int)
+	}
+	return
+}
+
+// KeyInt64 returns the value associated with the key as an integer.
+func (c *Context) KeyInt64(key string) (i64 int64) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		i64, _ = val.(int64)
+	}
+	return
+}
+
+// KeyUint returns the value associated with the key as an unsigned integer.
+func (c *Context) KeyUint(key string) (ui uint) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		ui, _ = val.(uint)
+	}
+	return
+}
+
+// KeyUint64 returns the value associated with the key as an unsigned integer.
+func (c *Context) KeyUint64(key string) (ui64 uint64) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		ui64, _ = val.(uint64)
+	}
+	return
+}
+
+// KeyFloat64 returns the value associated with the key as a float64.
+func (c *Context) KeyFloat64(key string) (f64 float64) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		f64, _ = val.(float64)
+	}
+	return
+}
+
+// KeyTime returns the value associated with the key as time.
+func (c *Context) KeyTime(key string) (t time.Time) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		t, _ = val.(time.Time)
+	}
+	return
+}
+
+// KeyDuration returns the value associated with the key as a duration.
+func (c *Context) KeyDuration(key string) (d time.Duration) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		d, _ = val.(time.Duration)
+	}
+	return
+}
+
+// KeyStringSlice returns the value associated with the key as a slice of strings.
+func (c *Context) KeyStringSlice(key string) (ss []string) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		ss, _ = val.([]string)
+	}
+	return
+}
+
+// KeyStringMap returns the value associated with the key as a map of interfaces.
+func (c *Context) KeyStringMap(key string) (sm map[string]interface{}) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		sm, _ = val.(map[string]interface{})
+	}
+	return
+}
+
+// KeyStringMapString returns the value associated with the key as a map of strings.
+func (c *Context) KeyStringMapString(key string) (sms map[string]string) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		sms, _ = val.(map[string]string)
+	}
+	return
+}
+
+// KeyStringMapStringSlice returns the value associated with the key as a map to a slice of strings.
+func (c *Context) KeyStringMapStringSlice(key string) (smss map[string][]string) {
+	if val, ok := c.GetKey(key); ok && val != nil {
+		smss, _ = val.(map[string][]string)
+	}
+	return
+}
+
+/*
  Header
 */
 
@@ -180,7 +318,7 @@ func (c *Context) GetHeader(key string) string {
 
 /*
 INPUT DATA
-REQUEST
+Request
 */
 
 // GetIP return k8s Cluster ip
@@ -414,7 +552,7 @@ func (c *Context) GetUint16(key string, def ...uint16) (uint16, error) {
 	return uint16(i64), err
 }
 
-//GetInt32 return int32 and error
+// GetInt32 return int32 and error
 //	-2147483648~2147483647
 func (c *Context) GetInt32(key string, def ...int32) (int32, error) {
 	v := c.formValue(key)

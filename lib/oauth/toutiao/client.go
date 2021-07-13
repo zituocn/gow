@@ -17,8 +17,8 @@ const (
 	getAccessTokenUrl = "https://developer.toutiao.com/api/apps/token?appid=%s&secret=%s&grant_type=client_credential"
 )
 
-//NewClient NewClient
-//传入appId和appSecret
+// NewClient NewClient
+//	传入appId和appSecret
 func NewClient(appId, secret string) *Client {
 	return &Client{
 		AppId:  appId,
@@ -26,7 +26,7 @@ func NewClient(appId, secret string) *Client {
 	}
 }
 
-//GetAccessToken 获得头条的接口登录凭证
+// GetAccessToken 获得头条的接口登录凭证
 func (c *Client) GetAccessToken() (accessData *AccessToken, err error) {
 	url := fmt.Sprintf(getAccessTokenUrl, c.AppId, c.Secret)
 	req.SetTimeout(10 * time.Second)

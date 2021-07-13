@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-//================原始数据操作层========================
+//================原始数据操作========================
 
 //demo model
 type Prov struct {
@@ -13,7 +13,7 @@ type Prov struct {
 	Name string
 }
 
-//from mysql or other...
+// from mysql or other...
 func (m *Prov) GetAllDataFromDB() (data []*Prov, err error) {
 	data = make([]*Prov, 0)
 	data = append(data, &Prov{
@@ -36,17 +36,15 @@ func (m *Prov) GetAllDataFromDB() (data []*Prov, err error) {
 // ProvCache 省份信息缓存 一个ICache的实现
 type ProvCache struct{}
 
-//KeyName KeyName
 func (m *ProvCache) KeyName() string {
 	return "prov"
 }
 
-//PrimaryKey PrimaryKey
 func (m *ProvCache) PrimaryKey(obj interface{}) string {
 	return fmt.Sprintf("%v", obj.(*Prov).ID)
 }
 
-//GetAllData
+// GetAllData
 func (m *ProvCache) GetAllData() (data interface{}, err error) {
 	data, err = new(Prov).GetAllDataFromDB()
 	return

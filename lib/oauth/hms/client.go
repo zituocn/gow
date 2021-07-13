@@ -14,7 +14,7 @@ const (
 	getAccessTokenUrl = "https://login.cloud.huawei.com/oauth2/v2/token"
 )
 
-//Client Client
+// Client hms client
 type Client struct {
 	AppId     string
 	AppSecret string
