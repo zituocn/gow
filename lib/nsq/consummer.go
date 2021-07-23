@@ -11,6 +11,7 @@ type MessageHandler struct {
 	stop      bool
 	nsqServer string
 	Channel   string
+	maxInFlight int
 }
 
 // NewMessageHandler return new MessageHandler
@@ -29,9 +30,17 @@ func NewMessageHandler(nsqServer string, channel string) (mh *MessageHandler, er
 	return
 }
 
+// SetMaxInFlight set nsq consumer MaxInFlight
+func (m *MessageHandler) SetMaxInFlight(val int){
+	m.maxInFlight = val
+}
+
 // Registry registry nsq topic
 func (m *MessageHandler) Registry(topic string, ch chan []byte) {
 	config := gnsq.NewConfig()
+	if m.maxInFlight > 0 {
+		config.MaxInFlight = m.maxInFlight
+	}
 	consumer, err := gnsq.NewConsumer(topic, m.Channel, config)
 	if err != nil {
 		panic(err)
