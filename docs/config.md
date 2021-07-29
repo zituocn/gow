@@ -82,7 +82,7 @@ env GOW_RUN_MODE=dev go run main.go
 
 ### 使用方法
 
-* 使用 ` r.GetAppConfig() ` 读取配置
+* 使用 ` gow.GetAppConfig() ` 读取配置
 * 使用 ` r.SetAppConfig() ` 载入配置
 
 ```go
@@ -101,7 +101,7 @@ func main(){
 
 *提示* 
 
-你也可以通过 `r.SetAppConfig()` 来实现自己的配置格式载入。
+你也可以通过 `r.SetAppConfig()` 来实现自己的配置方式或格式载入。
 
 ## 更多Config使用指南
 
