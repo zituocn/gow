@@ -29,6 +29,7 @@ type routeRegexp struct {
 func (rr *routeRegexp) Match(path string, match *matchValue) bool {
 	// set variables.
 	rr.setMatch(path, match)
+
 	//return true
 	return rr.regexp.MatchString(path)
 }
@@ -51,7 +52,6 @@ func (rr *routeRegexp) setMatch(path string, match *matchValue) {
 			}
 			match.params = params
 		}
-
 	}
 }
 

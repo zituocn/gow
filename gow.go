@@ -250,7 +250,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	engine.pool.Put(c)
 }
 
-// Match match engine.trees
+// Match match routes from engine.trees
 func (engine *Engine) Match(method, path string, match *matchValue) bool {
 	path = cleanPath(path)
 	for _, tree := range engine.trees {
