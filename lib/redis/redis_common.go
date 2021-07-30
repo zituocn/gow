@@ -29,6 +29,12 @@ func GetRDSCommon() *RDSCommon {
 /********     REDIS key 	 ********/
 /************************************/
 
+// GetConn GetConn
+func (m *RDSCommon) GetConn() redis.Conn {
+	rc := m.client.Get()
+	return rc
+}
+
 // GetTTL GetTTL
 func (m *RDSCommon) GetTTL(key string) (ttl int64, err error) {
 	rc := m.client.Get()
@@ -347,6 +353,26 @@ func (m *RDSCommon) GetZSetWithScoreToInt64s(key string, offset, limit int) (ii 
 		return
 	}
 	if err = redis.ScanSlice(values, &ii); err != nil {
+		return
+	}
+	return
+}
+
+// GetZSetWithZrevRange  ZSET - ZREVRANGE
+func (m *RDSCommon) GetZSetWithZrevRange(key string, offset, limit int) (values []interface{}, err error) {
+	rc := m.client.Get()
+	defer rc.Close()
+	values, err = redis.Values(rc.Do("ZREVRANGE", key, offset, offset+limit-1, "WITHSCORES"))
+	return
+}
+
+// GetZSetWithZrevRangeToStrings ZSET to []string
+func (m *RDSCommon) GetZSetWithZrevRangeToStrings(key string, offset, limit int) (ss []string, err error) {
+	values, err := m.GetZSetWithZrevRange(key, offset, limit)
+	if err != nil {
+		return
+	}
+	if err = redis.ScanSlice(values, &ss); err != nil {
 		return
 	}
 	return
