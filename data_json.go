@@ -24,7 +24,7 @@ type DataResponse struct {
 	Body *Body  `json:"body"`
 }
 
-// Body body struct
+// Body struct
 type Body struct {
 	Pager *Pager      `json:"pager"`
 	Data  interface{} `json:"data"`

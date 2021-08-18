@@ -411,7 +411,7 @@ func (c *Context) IsWebsocket() bool {
 	return false
 }
 
-// IsWeChat return is wechat request
+// IsWeChat return is WeChat request
 func (c *Context) IsWeChat() bool {
 	return strings.Contains(strings.ToLower(c.UserAgent()), strings.ToLower("MicroMessenger"))
 }
@@ -858,7 +858,7 @@ func (c *Context) ServerHTML(code int, name string, data ...interface{}) {
 	c.Render(code, name, v)
 }
 
-// HTML html page render
+// HTML  page render
 //	c.HTML("index.html")
 //	c.HTML("login.html",data)
 func (c *Context) HTML(name string, data ...interface{}) {

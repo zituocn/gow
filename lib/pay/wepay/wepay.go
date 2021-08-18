@@ -7,7 +7,9 @@ sam
 package wepay
 
 import (
+	"errors"
 	"fmt"
+	"github.com/zituocn/gow/lib/logy"
 	"github.com/zituocn/gow/lib/util"
 
 	"net/http"
@@ -250,5 +252,120 @@ func (m *WxAPI) OrderQuery(transactionID, outTradeNo string) (state bool, tradeN
 		err = fmt.Errorf(params.GetString("err_code_des")) //其他错误
 	}
 
+	return
+}
+
+/*
+退款相关SDK
+2021/8/18
+*/
+
+// Refund 申请退款
+func (m *WxAPI) Refund(transactionID, outTradeNo, outRefundNo, refundDesc string, totalFee, refundFee int) (refundId string, err error) {
+	if outTradeNo == "" && transactionID == "" {
+		err = fmt.Errorf("[outTradeNo]和[transactionID]不能同时为空")
+		return
+	}
+	if outRefundNo == "" {
+		err = fmt.Errorf("[outRefundNo]不能为空")
+		return
+	}
+	params := make(Params)
+	params.SetString("transaction_id", transactionID)
+	params.SetString("out_trade_no", outTradeNo)
+	params.SetString("out_refund_no", outRefundNo)           //商户退款单号
+	params.SetInt64("total_fee", int64(totalFee))            //订单金额
+	params.SetInt64("refund_fee", int64(refundFee))          //退款金额
+	params.SetString("refund_desc", refundDesc)              //退款原因
+	params.SetString("notify_url", m.Client.RefundNotifyUrl) //退款结果通知url
+	params, err = m.Client.Refund(params)
+	if err != nil {
+		return
+	}
+	if params.GetString("return_code") == "SUCCESS" {
+		refundId = params.GetString("refund_id")
+		if params.GetString("err_code") != "" {
+			logy.Errorf(fmt.Sprintf("申请退款失败：错误码：%v,错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des")))
+			err = errors.New(params.GetString("err_code_des"))
+		}
+	} else {
+		logy.Errorf("申请退款提交业务失败：%v", params.GetString("return_msg"))
+	}
+	return
+}
+
+// RefundQuery 退款查询
+func (m *WxAPI) RefundQuery(transactionID, outTradeNo, outRefundNo, refundId string) (status string, recvName string, err error) {
+	if transactionID == "" && outTradeNo == "" && outRefundNo == "" && refundId == "" {
+		err = fmt.Errorf("[transactionID]和[outTradeNo]和[outRefundNo]和[refundId]不能同时为空")
+		return
+	}
+	params := make(Params)
+	params.SetString("transaction_id", transactionID)
+	params.SetString("out_trade_no", outTradeNo)
+	params.SetString("out_refund_no", outRefundNo) //商户退款单号
+	params.SetString("refund_id", refundId)        //微信生成的退款单号
+	params, err = m.Client.RefundQuery(params)
+	if err != nil {
+		return
+	}
+	if params.GetString("return_code") == "SUCCESS" {
+		//校验退款单号是否匹配
+		var tag bool
+		if transactionID != "" && transactionID == params.GetString("transaction_id") {
+			tag = true
+		}
+		if outTradeNo != "" && outTradeNo == params.GetString("out_trade_no") {
+			tag = true
+		}
+		//_0 这类字段都是加了偏移量offset，由于此处的业务没有一个订单下多笔退款单的情况，都将offset默认为0
+		if outRefundNo != "" && outTradeNo == params.GetString("out_refund_no_0") {
+			tag = true
+		}
+		if refundId != "" && refundId == params.GetString("refund_id_0") {
+			tag = true
+		}
+		if tag {
+			//退款状态
+			/*
+				SUCCESS—退款成功
+				REFUNDCLOSE—退款关闭，指商户发起退款失败的情况
+				PROCESSING—退款处理中
+				CHANGE—退款异常，退款到银行发现用户的卡作废或者冻结了，导致原路退款银行卡失败，可前往商户平台（pay.weixin.qq.com）-交易中心，手动处理此笔退款。$n为下标，从0开始编号。
+			*/
+			status = params.GetString("refund_status_0")
+			recvName = params.GetString("refund_recv_accout_0") //退款入账账户
+
+			if status == "REFUNDCLOSE" {
+				logy.Errorf("退款已关闭，商户发起退款失败,错误码：%v，错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des"))
+			} else if status == "CHANGE" {
+				logy.Errorf("退款异常，退款到银行发现用户的卡作废或者冻结了，导致原路退款银行卡失败，错误码：%v，错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des"))
+			}
+		} else {
+			logy.Errorf("单号不匹配")
+		}
+	} else {
+		logy.Errorf("查询退款业务失败：%v", params.GetString("return_msg"))
+	}
+	return
+}
+
+// RefundNotify 退款异步通知
+//	返回异步通知状态信息
+//	以xml方式输出 ret
+func (m *WxAPI) RefundNotify(req *http.Request) (ret *NotifyRet, outTradeNo, refundStatus, recvName string, err error) {
+	params, err := m.Client.RefundNotify(req)
+	if err != nil {
+		return
+	}
+	ret = new(NotifyRet)
+	if params["return_code"] == "SUCCESS" {
+		ret.ReturnCode = "SUCCESS"
+		ret.ReturnMsg = "OK"
+	}
+	//返回给调用方做校验证和回写使用；
+	recvName = params.GetString("refund_recv_accout")
+	refundStatus = params.GetString("refund_status")
+	outTradeNo = params.GetString("out_trade_no")
 	return
 }

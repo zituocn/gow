@@ -12,9 +12,12 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/gow/lib/util"
 	"io/ioutil"
 	"net/http"
 	"sort"
@@ -29,12 +32,12 @@ type Client struct {
 	httpReadTimeout    int
 }
 
-//SetHTTPConnectTimeoutMs SetHTTPConnectTimeoutMs
+// SetHTTPConnectTimeoutMs ...
 func (c *Client) SetHTTPConnectTimeoutMs(ms int) {
 	c.httpConnectTimeout = ms
 }
 
-//SetHTTPReadTimeoutMs SetHTTPReadTimeoutMs
+// SetHTTPReadTimeoutMs ...
 func (c *Client) SetHTTPReadTimeoutMs(ms int) {
 	c.httpReadTimeout = ms
 }
@@ -149,7 +152,7 @@ func (c *Client) Sign(params Params) string {
 		str        string
 	)
 
-	fmt.Println("签名前的Params:", buf.String())
+	//fmt.Println("签名前的Params:", buf.String())
 
 	switch c.signType {
 	case MD5:
@@ -168,9 +171,9 @@ func (c *Client) Sign(params Params) string {
 }
 
 // processResponseXML 处理 HTTPS API返回数据，转换成Map对象。return_code为SUCCESS时，验证签名。
-func (c *Client) processResponseXML(xmlStr string) (Params, error) {
+func (c *Client) processResponseXML(xmlStr string, needCheckSign ...bool) (Params, error) {
 	var returnCode string
-	params := XMLToMap(xmlStr)
+	params := XMLToMap(xmlStr, "")
 	fmt.Println("返回的参数:", params)
 	if params.ContainsKey("return_code") {
 		returnCode = params.GetString("return_code")
@@ -180,10 +183,16 @@ func (c *Client) processResponseXML(xmlStr string) (Params, error) {
 	if returnCode == Fail {
 		return nil, fmt.Errorf("返回[Fail]:%v", params.GetString("return_msg"))
 	} else if returnCode == Success {
-		if c.ValidSign(params) { //验证签名
+		//默认需要验证签名
+		if len(needCheckSign) == 0 || (len(needCheckSign) > 0 && needCheckSign[0]) {
+			if c.ValidSign(params) { //验证签名
+				return params, nil
+			} else {
+				return nil, errors.New("返回的xml信息签名错误")
+			}
+		} else {
 			return params, nil
 		}
-		return nil, errors.New("返回的xml信息签名错误")
 	} else {
 		return nil, errors.New("返回的[return_code]无法识别类型")
 	}
@@ -198,6 +207,68 @@ func (c *Client) Notify(req *http.Request) (Params, error) {
 	// 写回 body 内容
 	req.Body = ioutil.NopCloser(bytes.NewReader(data))
 	return c.processResponseXML(string(data))
+}
+
+// RefundNotify 退款异步通知处理
+func (c *Client) RefundNotify(req *http.Request) (Params, error) {
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+	params, err := c.processResponseXML(string(data), false)
+	if err != nil {
+		return nil, err
+	}
+	//加密数据
+	/*
+		解密步骤如下：
+		（1）对加密串A做base64解码，得到加密串B
+		（2）对商户key做md5，得到32位小写key* (key设置路径：微信商户平台(pay.weixin.qq.com)-->账户设置-->API安全-->密钥设置)
+		（3）用key*对加密串B做AES-256-ECB解密（PKCS7Padding）
+	*/
+	reqInfo := params.GetString("req_info")
+	if reqInfo == "" {
+		err = errors.New("获得加密信息失败")
+		return nil, err
+	}
+	//对加密串做base64解码
+	decodeInfo, err := base64.StdEncoding.DecodeString(reqInfo)
+	if err != nil {
+		logy.Errorf(fmt.Sprintf("对加密串做base64解码出错:%v", err))
+	}
+
+	//对商户key做md5
+	key := util.MD5(c.APIKey)
+
+	//AES-256-ECB解密
+	decryptData := util.AesDecryptECB(decodeInfo, []byte(key))
+
+	/*
+		解密出来的xml示例：
+		<root>
+		<out_refund_no><![CDATA[WX****************]]></out_refund_no>
+		<out_trade_no><![CDATA[WX****************]]></out_trade_no>
+		<refund_account><![CDATA[********]]></refund_account>
+		<refund_fee><![CDATA[1]]></refund_fee>
+		<refund_id><![CDATA[********]]></refund_id>
+		<refund_recv_accout><![CDATA[支付用户零钱]]></refund_recv_accout>
+		<refund_request_source><![CDATA[API]]></refund_request_source>
+		<refund_status><![CDATA[SUCCESS]]></refund_status>
+		<settlement_refund_fee><![CDATA[1]]></settlement_refund_fee>
+		<settlement_total_fee><![CDATA[1]]></settlement_total_fee>
+		<success_time><![CDATA[2021-08-12 17:49:54]]></success_time>
+		<total_fee><![CDATA[1]]></total_fee>
+		<transaction_id><![CDATA[*********************]]></transaction_id>
+		</root>
+	*/
+
+	//将xml转换成map：根据解密出来的xml可以看出，xml解析成map的key应该是root，XMLToMap方法默认的key是xml
+	retParams := XMLToMap(string(decryptData), "root")
+	retParams.SetString("return_code", params.GetString("return_code"))
+
+	// 写回 body 内容
+	req.Body = ioutil.NopCloser(bytes.NewReader(data))
+	return retParams, nil
 }
 
 // UnifiedOrder 统一下单
@@ -319,7 +390,7 @@ func (c *Client) DownloadBill(params Params) (Params, error) {
 
 	// 如果出现错误，返回XML数据
 	if strings.Index(xmlStr, "<") == 0 {
-		p = XMLToMap(xmlStr)
+		p = XMLToMap(xmlStr, "")
 		return p, err
 	}
 

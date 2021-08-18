@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// IntDateTime IntDateTime
+// IntDateTime returns int64 time to format
 func IntDateTime(val int64) (ret string) {
 	if val < 1 {
 		return

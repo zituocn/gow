@@ -26,7 +26,7 @@ func AESEncrypt(plainText string, key string) string {
 	return hex.EncodeToString(cipherText)
 }
 
-// AESDecrypt 解码
+// AESDecrypt AES CBC decrypt
 func AESDecrypt(decodeStr string, key string) (string, error) {
 	bKey := []byte(key)
 	bIV := []byte(iv)
@@ -59,4 +59,38 @@ func PKCS5UnPadding(origData []byte) []byte {
 	length := len(origData)
 	unPadding := int(origData[length-1])
 	return origData[:(length - unPadding)]
+}
+
+// AesDecryptECB AES-256-ECB decrypt
+func AesDecryptECB(encrypted []byte, key []byte) (decrypted []byte) {
+	cipher, _ := aes.NewCipher(generateKey(key))
+	decrypted = make([]byte, len(encrypted))
+	for bs, be := 0, cipher.BlockSize(); bs < len(encrypted); bs, be = bs+cipher.BlockSize(), be+cipher.BlockSize() {
+		cipher.Decrypt(decrypted[bs:be], encrypted[bs:be])
+	}
+
+	trim := 0
+	if len(decrypted) > 0 {
+		trim = len(decrypted) - int(decrypted[len(decrypted)-1])
+	}
+
+	return decrypted[:trim]
+}
+
+/*
+private
+*/
+
+func generateKey(key []byte) (genKey []byte) {
+	if len(key) == 16 || len(key) == 24 || len(key) == 32 {
+		return key
+	}
+	genKey = make([]byte, 16)
+	copy(genKey, key)
+	for i := 16; i < len(key); {
+		for j := 0; j < 16 && i < len(key); j, i = j+1, i+1 {
+			genKey[j] ^= key[i]
+		}
+	}
+	return genKey
 }
