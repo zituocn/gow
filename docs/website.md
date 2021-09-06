@@ -70,7 +70,7 @@ func main() {
     // 使用自动配置，读取了 conf/app.conf中的配置
     r.SetAppConfig(gow.GetAppConfig())
 
-    // 设置资源资源啃路由
+    // 设置资源资源的路由
     r.Static("/static","static")
     r.GET("/",IndexHandler)
     r.Run()
