@@ -31,7 +31,6 @@ const (
 
 var (
 	default404Body = []byte("404 page not found")
-	default405Body = []byte("405 method not allowed")
 )
 
 // HandlerFunc gow handler
@@ -41,7 +40,7 @@ type HandlerFunc func(ctx *Context)
 // HandlersChain []HandlerFunc
 type HandlersChain []HandlerFunc
 
-// Last last handler func
+// Last HandlerFunc
 func (c HandlersChain) Last() HandlerFunc {
 	if length := len(c); length > 0 {
 		return c[length-1]
@@ -68,6 +67,10 @@ type Engine struct {
 	//	default: true
 	ignoreCase bool
 
+	// default:true
+	// ignoreTrailingSlash if true ignore the default trailing slash one the route
+	ignoreTrailingSlash bool
+
 	RouterGroup
 	HandleMethodNotAllowed bool
 	MaxMultipartMemory     int64
@@ -87,6 +90,7 @@ type Engine struct {
 //	gzipOn false
 //	sessionOn false
 //	ignoreCase true
+//	ignoreTrailingSlash true
 //	AutoRender false
 //	RunMode = "dev"
 func New() *Engine {
@@ -96,18 +100,19 @@ func New() *Engine {
 			basePath: "/",
 			root:     true,
 		},
-		AppName:            "gow",
-		RunMode:            "dev",
-		httpAddr:           defaultHttpAddr,
-		AutoRender:         false,
-		FuncMap:            template.FuncMap{},
-		delims:             render.Delims{Left: "{{", Right: "}}"},
-		viewsPath:          defaultViews,
-		staticPath:         defaultStatic,
-		gzipOn:             false,
-		sessionOn:          false,
-		ignoreCase:         true,
-		MaxMultipartMemory: defaultMultipartMemory,
+		AppName:             "gow",
+		RunMode:             "dev",
+		httpAddr:            defaultHttpAddr,
+		AutoRender:          false,
+		FuncMap:             template.FuncMap{},
+		delims:              render.Delims{Left: "{{", Right: "}}"},
+		viewsPath:           defaultViews,
+		staticPath:          defaultStatic,
+		gzipOn:              false,
+		sessionOn:           false,
+		ignoreCase:          true,
+		ignoreTrailingSlash: true,
+		MaxMultipartMemory:  defaultMultipartMemory,
 
 		trees: make([]methodTree, 0, 9),
 	}
@@ -161,6 +166,11 @@ func (engine *Engine) SetGzipOn(on bool) {
 // SetIgnoreCase set ignore case on the route
 func (engine *Engine) SetIgnoreCase(ignore bool) {
 	engine.ignoreCase = ignore
+}
+
+// SetIgnoreTrailingSlash set ignore trailing slash one the route
+func (engine *Engine) SetIgnoreTrailingSlash(ignore bool) {
+	engine.ignoreTrailingSlash = ignore
 }
 
 // Run start http service
@@ -250,9 +260,9 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	engine.pool.Put(c)
 }
 
-// Match match routes from engine.trees
+// Match routes from engine.trees
 func (engine *Engine) Match(method, path string, match *matchValue) bool {
-	path = cleanPath(path)
+	path = cleanPath(path, engine.ignoreTrailingSlash)
 	for _, tree := range engine.trees {
 		routes := tree.get(method)
 		for _, route := range routes {
@@ -297,7 +307,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	serveError(c, http.StatusNotFound, default404Body)
 }
 
-// Use use middleware
+// Use middleware
 //	ex: r.Use(Auth())
 func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
@@ -356,7 +366,8 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 		method: method,
 	}
 	rc := &routeConfig{
-		ignoreCase: engine.ignoreCase,
+		ignoreCase:          engine.ignoreCase,
+		ignoreTrailingSlash: engine.ignoreTrailingSlash,
 	}
 	mt.routes = mt.addRoute(path, handlers, rc)
 	engine.trees = append(engine.trees, mt)

@@ -30,7 +30,7 @@ func nameOfFunction(f interface{}) string {
 }
 
 // cleanPath clear route path
-func cleanPath(p string) string {
+func cleanPath(p string, ignore bool) string {
 	if p == "" {
 		return "/"
 	}
@@ -44,7 +44,7 @@ func cleanPath(p string) string {
 		np += "/"
 	}
 
-	if len(np) > 1 && np[len(np)-1] == '/' {
+	if ignore && len(np) > 1 && np[len(np)-1] == '/' {
 		np = np[0 : len(np)-1]
 	}
 	return np

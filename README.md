@@ -1,6 +1,8 @@
 # gow
-
 gow is a golang HTTP web framework
+
+![gow logo](docs/logo.png)
+
 
 > 借鉴和参考的项目：gin/beego/mux
 

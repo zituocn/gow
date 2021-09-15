@@ -73,7 +73,7 @@ func getPattern(path string) (pattern string) {
 
 // addRouteRegexp add regexp route to math
 func addRouteRegexp(path string, rc *routeConfig) (*routeRegexp, error) {
-	path = cleanPath(path)
+	path = cleanPath(path, rc.ignoreTrailingSlash)
 	idxs, errBraces := braceIndices(path)
 	if errBraces != nil {
 		return nil, errBraces

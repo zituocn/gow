@@ -22,6 +22,8 @@ type routeConfig struct {
 
 	// if true ignore case on the route
 	ignoreCase bool
+
+	ignoreTrailingSlash bool
 }
 
 // matchValue return route struct
