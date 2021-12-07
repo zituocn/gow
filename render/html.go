@@ -25,7 +25,7 @@ var (
 	// beeViewPathTemplates caching map and supported template file extensions per view
 	beeViewPathTemplates = make(map[string]map[string]*template.Template)
 
-	templatesLock        sync.RWMutex
+	templatesLock sync.RWMutex
 
 	// beeTemplateExt stores the template extension which will build
 	beeTemplateExt = []string{"tpl", "html", "gohtml", "htm"}
@@ -33,7 +33,7 @@ var (
 	// beeTemplatePreprocessors stores associations of extension -> preprocessor handler
 	beeTemplateEngines = map[string]templatePreProcessor{}
 
-	beeTemplateFS      = defaultFSFunc
+	beeTemplateFS = defaultFSFunc
 
 	defaultViewPath = "views"
 	defaultRunMode  = "dev"

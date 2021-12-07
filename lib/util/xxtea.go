@@ -22,7 +22,7 @@ func NewXXTea(key string) *XXTea {
 	}
 }
 
-// EncryptString EncryptString
+// EncryptString returns encrypt string
 func (m *XXTea) EncryptString(str string) string {
 	s := []byte(str)
 	k := []byte(m.Key)
@@ -30,7 +30,7 @@ func (m *XXTea) EncryptString(str string) string {
 	return b64.EncodeToString(Encrypt(s, k))
 }
 
-// DecryptString DecryptString
+// DecryptString returns decrypt string and error
 func (m *XXTea) DecryptString(str string) (string, error) {
 	k := []byte(m.Key)
 	b64 := base64.StdEncoding

@@ -7,14 +7,14 @@ import (
 	"net"
 )
 
-// Server GRPCServer
+// Server GRPC Server struct
 type Server struct {
 	Listener net.Listener
 	Server   *grpc.Server
 	Port     int //端口
 }
 
-// NewServer return a server
+// NewServer returns a new server
 func NewServer(port int) (server *Server, err error) {
 	if port == 0 {
 		err = fmt.Errorf("[RPC] init failed：need port")
@@ -41,5 +41,4 @@ func (m *Server) Run() {
 			logy.Error("[RPC] failed to listen:%v", err)
 		}
 	}()
-
 }

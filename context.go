@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -16,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -836,7 +838,10 @@ func (c *Context) Render(code int, name string, data interface{}) {
 	}
 
 	if err := c.engine.Render.Render(c.Writer, name, data); err != nil {
-		debugPrint("html render error: #s", err.Error())
+		//ignore "broken pipe" error
+		if !errors.Is(err, syscall.EPIPE) {
+			debugPrint("html render error: %s", err.Error())
+		}
 	}
 }
 
