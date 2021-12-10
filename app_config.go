@@ -33,6 +33,6 @@ func GetAppConfig() *AppConfig {
 		TemplateRight: config.DefaultString("template_right", "}}"),
 		SessionOn:     config.DefaultBool("session_on", false),
 		GzipOn:        config.DefaultBool("gzip_on", false),
-		IgnoreCase:    config.DefaultBool("ignore_case", true),
+		IgnoreCase:    config.DefaultBool("ignore_case", false),
 	}
 }
