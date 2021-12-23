@@ -9,9 +9,10 @@ import (
 
 // Server GRPC Server struct
 type Server struct {
-	Listener net.Listener
-	Server   *grpc.Server
-	Port     int //端口
+	Listener   net.Listener
+	Server     *grpc.Server
+	Port int
+
 }
 
 // NewServer returns a new server
@@ -31,6 +32,10 @@ func NewServer(port int) (server *Server, err error) {
 		Port:     port,
 	}
 	return
+}
+
+func (m *Server) Register() {
+
 }
 
 // Run run rpc server
