@@ -2,6 +2,8 @@ module github.com/zituocn/gow
 
 go 1.15
 
+replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
+
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1140
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.8+incompatible
