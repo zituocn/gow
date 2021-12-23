@@ -3,8 +3,8 @@ module github.com/zituocn/gow
 go 1.16
 
 replace (
-	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.6
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0
+	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.6
 )
 
 require (
