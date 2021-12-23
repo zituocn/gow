@@ -43,7 +43,6 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 	clientName := getValue(md, "clientname")
 	clientIp,_ := GetIp()
 	serviceName := getValue(md, "servicename")
-	//requestId := getValue(md, "requestid")
 	startTime := time.Now()
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	if err != nil {
@@ -55,7 +54,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 			method,
 			err)
 	} else {
-		logy.Infof("[GRPC] %v | %s(%v)->%s(%v) | %s ",
+		logy.Infof("[GRPC] %13v | %s(%v)->%s(%v) | %s ",
 			time.Now().Sub(startTime),
 			clientName,
 			clientIp,
@@ -71,15 +70,15 @@ type wrappedStreamClient struct {
 	grpc.ClientStream
 }
 
-// RecvMsg
+// RecvMsg  receive message
+//	returns error
 func (w *wrappedStreamClient) RecvMsg(m interface{}) error {
-	log.Println("Receive a message (Type: %T) at %v", m, time.Now().Format(time.RFC3339))
 	return w.ClientStream.RecvMsg(m)
 }
 
-// SendMsg
+// SendMsg send message
+//	returns error
 func (w *wrappedStreamClient) SendMsg(m interface{}) error {
-	log.Println("Send a message (Type: %T) at %v", m, time.Now().Format(time.RFC3339))
 	return w.ClientStream.SendMsg(m)
 }
 
@@ -129,7 +128,7 @@ type discovery struct {
 	retryTime time.Duration
 }
 
-// DiscoveryArg 创建发现服务对象参数
+// ClientArg 创建发现服务对象参数
 type ClientArg struct {
 	ServerAddr  string
 	EtcdAddr    string
@@ -145,7 +144,7 @@ func NewClient(dis ClientArg) (*discovery, error) {
 		return nil, etcdAddrNilErr
 	}
 	if len(dis.ServiceName) < 1 {
-		return nil, fmt.Errorf("[Grpc] 参数err: ServiceName is null.")
+		return nil, fmt.Errorf("[RPC] 参数错误: ServiceName is null")
 	}
 
 	return &discovery{

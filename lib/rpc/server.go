@@ -2,8 +2,8 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -19,102 +19,86 @@ import (
 
 // Server GRPC Server struct
 type Server struct {
-<<<<<<< HEAD
 	Listener   net.Listener
 	Server     *grpc.Server
-	Port int
-
-=======
-	Listener net.Listener
-	Server   *grpc.Server
-	Port     int // 端口
-	Name     string // 服务昵称
-	EtcdAddr []string
+	Port       int    // 端口
+	Name       string // 服务昵称
+	EtcdAddr   []string
 	isRegister bool
 }
 
-// GrpcServerArg grpc服务端参数
+// ServerArg grpc 服务端参数
 type ServerArg struct {
-	IP string
-	Port int
-	Name string
+	IP       string
+	Port     int
+	Name     string
 	EtcdAddr string // 多个地址必须使用","分开; 如: 192.168.0.1:2379,192.168.0.2:2379
-	Register bool // 是否启用服务注册
->>>>>>> 0dbeee813b17705702d59242345ee33503144000
+	Register bool   // 是否启用服务注册
 }
 
 // NewServer returns a new server
 func NewServer(grpcAddr ServerArg) (server *Server, err error) {
-
 	if grpcAddr.Port == 0 {
 		err = fmt.Errorf("[RPC] init failed：need port")
 		return
 	}
-
 	listener, err := net.Listen("tcp", grpcAddr.String())
 	if err != nil {
 		return
 	}
-
 	if grpcAddr.Register && len(grpcAddr.EtcdAddr) < 1 {
-		err = fmt.Errorf("[RPC]服务注册缺少etcd参数!")
+		err = errors.New("[RPC]服务注册缺少etcd参数")
 		return
 	}
 
 	newServer := grpc.NewServer(grpc.UnaryInterceptor(unaryInterceptor), grpc.StreamInterceptor(streamInterceptor))
 	server = &Server{
-		Listener: listener,
-		Server:   newServer,
-		Port:     grpcAddr.Port,
-		Name:     grpcAddr.Name,
-		EtcdAddr: strings.Split(grpcAddr.EtcdAddr, ","),
+		Listener:   listener,
+		Server:     newServer,
+		Port:       grpcAddr.Port,
+		Name:       grpcAddr.Name,
+		EtcdAddr:   strings.Split(grpcAddr.EtcdAddr, ","),
 		isRegister: grpcAddr.Register,
 	}
 
 	return
 }
 
-<<<<<<< HEAD
-func (m *Server) Register() {
-
-=======
 // String  ServerArg ip -> string
 func (addr ServerArg) String() string {
 	return fmt.Sprintf("%s:%d", addr.IP, addr.Port)
 }
 
-// SetName
+// SetName set grpc server name
 func (m *Server) SetName(name string) *Server {
 	m.Name = name
 	return m
 }
 
-// SetPort
+// SetPort set grpc port
 func (m *Server) SetPort(port int) *Server {
 	m.Port = port
 	return m
 }
 
-// SetEtcdAddr
+// SetEtcdAddr set etcd address
 func (m *Server) SetEtcdAddr(etcdAddr string) *Server {
 	m.EtcdAddr = strings.Split(etcdAddr, ",")
 	return m
 }
 
-// OpenRegister
+// OpenRegister set isRegister=true
 func (m *Server) OpenRegister() *Server {
 	m.isRegister = true
 	return m
->>>>>>> 0dbeee813b17705702d59242345ee33503144000
 }
 
 // Run run rpc server
 func (m *Server) Run() {
-
 	go func() {
 		err := m.Server.Serve(m.Listener)
 		if err != nil {
-			log.Println("[RPC] failed to listen:%v", err)
+			logy.Errorf("[RPC] failed to listen:%v", err)
 		}
 	}()
 
@@ -126,18 +110,15 @@ func (m *Server) Run() {
 // Register 将grpc服务信息注册到etcd
 func (m *Server) register() {
 	if len(m.Name) < 1 {
-		logy.Error("[RPC] grpc服务注册失败, 未设置服务名称. ")
 		panic("[RPC] grpc服务注册失败, 未设置服务名称. ")
 	}
 
 	ip, err := GetIp()
 	if err != nil {
-		logy.Error("[RPC] grpc服务注册失败, 获取本机ip失败, err = "+err.Error())
-		panic("[RPC] grpc服务注册失败, 获取本机ip失败, err = "+err.Error())
+		panic("[RPC] grpc服务注册失败, 获取本机ip失败, err = " + err.Error())
 	}
 
 	if len(m.EtcdAddr) < 1 {
-		logy.Error("[RPC] grpc服务注册失败, etcd地址为空;")
 		panic("[RPC] grpc服务注册失败, etcd地址为空;")
 	}
 
@@ -147,7 +128,7 @@ func (m *Server) register() {
 	if err != nil {
 		panic("[致命启动错误] 服务注册失败 err = " + err.Error())
 	} else {
-		logy.Info("[grpc服务注册] Register Succeed; key = ", key)
+		logy.Infof("[RPC] 服务注册 Register Succeed; key = %s ", key)
 	}
 
 	ch := make(chan os.Signal, 1)
@@ -155,7 +136,7 @@ func (m *Server) register() {
 	go func() {
 		s := <-ch
 		// 接收到进程退出信号量,解除租约
-		_=etcdConn.UnRegister(key)
+		_ = etcdConn.UnRegister(key)
 		if i, ok := s.(syscall.Signal); ok {
 			os.Exit(int(i))
 		} else {
@@ -173,8 +154,7 @@ func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServ
 	md, _ := metadata.FromIncomingContext(ctx)
 	clientName := getValue(md, "clientname")
 	serviceName := getValue(md, "servicename")
-	//requestId := getValue(md, "requestid")
-	serviceIp,_ := GetIp()
+	serviceIp, _ := GetIp()
 	m, err := handler(ctx, req)
 	if err != nil {
 		logy.Errorf("[GRPC] %s(%v)->%s(%v) | %s | err = %v",
@@ -185,7 +165,7 @@ func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServ
 			info.FullMethod,
 			err)
 	} else {
-		logy.Infof("[GRPC] %v | %s(%v)->%s(%v) | %s ",
+		logy.Infof("[GRPC] %13v | %s(%v)->%s(%v) | %s ",
 			time.Now().Sub(startTime),
 			clientName,
 			pr.Addr.String(),
@@ -201,15 +181,15 @@ type wrappedStream struct {
 	grpc.ServerStream
 }
 
-// RecvMsg
+// RecvMsg  receive message
+//	returns error
 func (w *wrappedStream) RecvMsg(m interface{}) error {
-	log.Println("Receive a message (Type: %T) at %s", m, time.Now().Format(time.RFC3339))
 	return w.ServerStream.RecvMsg(m)
 }
 
-// SendMsg
+// SendMsg send message
+//	returns error
 func (w *wrappedStream) SendMsg(m interface{}) error {
-	log.Println("Send a message (Type: %T) at %v", m, time.Now().Format(time.RFC3339))
 	return w.ServerStream.SendMsg(m)
 }
 
@@ -229,7 +209,7 @@ func streamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamS
 	}
 	err := handler(srv, newWrappedStream(ss))
 	if err != nil {
-		log.Println("RPC failed with error %v", err)
+		logy.Errorf("[RPC] failed with error :%v", err)
 	}
 	return err
 }
