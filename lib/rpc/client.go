@@ -2,8 +2,8 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -12,10 +12,6 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-var (
-	etcdAddrNilErr = fmt.Errorf("[ETCD参数错误] etcd Addr is null; ex: 192.168.0.1:2379,192.168.0.2:2379")
-	notServiceErr = fmt.Errorf("[发现服务失败] 没有发现服务")
-)
 
 // newClient return a new rpc client
 func newClient(server string) (client *grpc.ClientConn, err error) {
@@ -41,7 +37,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 	}
 	md, _ := metadata.FromOutgoingContext(ctx)
 	clientName := getValue(md, "clientname")
-	clientIp,_ := GetIp()
+	clientIp, _ := GetIp()
 	serviceName := getValue(md, "servicename")
 	startTime := time.Now()
 	err := invoker(ctx, method, req, reply, cc, opts...)
@@ -107,7 +103,7 @@ func setCtx(serviceName, myName string, grpcConn *grpc.ClientConn) context.Conte
 	if grpcConn == nil {
 		return nil
 	}
-	kv := []string {
+	kv := []string{
 		//"RequestId", ID(),
 		"ClientName", myName,
 		"ServiceName", serviceName,
@@ -115,17 +111,16 @@ func setCtx(serviceName, myName string, grpcConn *grpc.ClientConn) context.Conte
 	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs(kv...))
 }
 
-
 // discovery 发现服务
 type discovery struct {
-	serverAddr string
-	etcdAddr []string
-	clientName string
+	serverAddr  string
+	etcdAddr    []string
+	clientName  string
 	serviceName string
-	isLog bool
-	times int
-	retry int // 重试次数
-	retryTime time.Duration
+	isLog       bool
+	times       int
+	retry       int // 重试次数
+	retryTime   time.Duration
 }
 
 // ClientArg 创建发现服务对象参数
@@ -141,21 +136,21 @@ type ClientArg struct {
 func NewClient(dis ClientArg) (*discovery, error) {
 	etcdAddr := strings.Split(dis.EtcdAddr, ",")
 	if len(etcdAddr) < 1 {
-		return nil, etcdAddrNilErr
+		return nil, errors.New("[RPC] 参数错误: etcdAddress is null")
 	}
 	if len(dis.ServiceName) < 1 {
 		return nil, fmt.Errorf("[RPC] 参数错误: ServiceName is null")
 	}
 
 	return &discovery{
-		serverAddr: dis.ServerAddr,
-		etcdAddr: etcdAddr,
-		clientName: dis.ClientName,
+		serverAddr:  dis.ServerAddr,
+		etcdAddr:    etcdAddr,
+		clientName:  dis.ClientName,
 		serviceName: dis.ServiceName,
-		isLog: dis.OpenLog,
-		times: 0,
-		retry: 20,
-		retryTime: 50*time.Millisecond,
+		isLog:       dis.OpenLog,
+		times:       0,
+		retry:       20,
+		retryTime:   50 * time.Millisecond,
 	}, nil
 }
 
@@ -166,31 +161,30 @@ func (c *discovery) Conn() (client *grpc.ClientConn, ctx context.Context, err er
 	return
 }
 
-
 // Min  发现服务获取grpc连接; 负载均衡 - 最小连接数法;
 func (c *discovery) Min() (client *grpc.ClientConn, ctx context.Context, err error) {
 	// 避免一直重试
 	if c.times > c.retry {
-		err = notServiceErr
+		err = errors.New("[ETCD] 没有发现服务")
 	}
 	NewEtcdCli(c.etcdAddr)
-	grpcIPKey,_ := etcdConn.GetMinKey(serverNameKey(c.serviceName))
+	grpcIPKey, _ := etcdConn.GetMinKey(serverNameKey(c.serviceName))
 	grpcIPList := strings.Split(grpcIPKey, "/")
 	if len(grpcIPList) < 1 {
-		time.Sleep(c.retryTime)  // 没有获取到服务地址, 可能是服务还在启动中, 等待50ms从新获取
+		time.Sleep(c.retryTime) // 没有获取到服务地址, 可能是服务还在启动中, 等待50ms从新获取
 		c.times++
 		return c.Min()
 	}
 	grpcIP := grpcIPList[len(grpcIPList)-1]
 	client, err = newClient(grpcIP)
 	if err != nil || client == nil {
-		time.Sleep(c.retryTime)  // 连不上可能是服务还在启动中, 等待50ms从新获取
+		time.Sleep(c.retryTime) // 连不上可能是服务还在启动中, 等待50ms从新获取
 		c.times++
 		return c.Min()
 	}
 
 	// 使用GetMinKey方式需要执行GetMinKeyCallBack
-	_=etcdConn.GetMinKeyCallBack(grpcIPKey)
+	_ = etcdConn.GetMinKeyCallBack(grpcIPKey)
 	if c.isLog {
 		ctx = setCtx(c.serviceName, c.clientName, client)
 	} else {
@@ -203,12 +197,11 @@ func (c *discovery) Min() (client *grpc.ClientConn, ctx context.Context, err err
 // Rand  发现服务获取grpc连接; 负载均衡 - 随机法;
 func (c *discovery) Rand() (client *grpc.ClientConn, ctx context.Context, err error) {
 	if c.times > c.retry {
-		err = notServiceErr
+		err = errors.New("[ETCD] 没有发现服务")
 	}
 	NewEtcdCli(c.etcdAddr)
 	serviceNameKey := serverNameKey(c.serviceName)
 	grpcIP, _ := etcdConn.GetRandKey(serviceNameKey)
-	log.Println("grpcIP = ", grpcIP)
 	client, err = newClient(grpcIP)
 	if err != nil || client == nil {
 		time.Sleep(c.retryTime) // 连不上可能是服务还在启动中, 等待50ms从新获取
@@ -223,15 +216,3 @@ func (c *discovery) Rand() (client *grpc.ClientConn, ctx context.Context, err er
 	}
 	return
 }
-
-// TODO  Discovery.Poll     发现服务获取grpc连接; 负载均衡 - 轮询法;
-
-// TODO  Discovery.HashIP   发现服务获取grpc连接; 负载均衡 - 源地址哈希法;
-
-// TODO  Discovery.Hash     发现服务获取grpc连接; 负载均衡 - 一致性哈希法;
-
-// TODO  Discovery.WRR      发现服务获取grpc连接; 负载均衡 - 加权轮询法;
-
-// TODO  Discovery.RandWH   发现服务获取grpc连接; 负载均衡 - 加权随机法;
-
-// TODO  Discovery.Fastest  发现服务获取grpc连接; 负载均衡 - 最快响应速度法;
