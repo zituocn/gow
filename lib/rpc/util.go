@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"net"
@@ -14,7 +13,9 @@ import (
 
 // byte2int  byte -> int
 func byte2int(b []byte) int {
-	return int(binary.LittleEndian.Uint32(b))
+	s := string(b)
+	i, _ := strconv.ParseInt(s, 10, 32)
+	return int(i)
 }
 
 // GetLocalIP get local ip address
