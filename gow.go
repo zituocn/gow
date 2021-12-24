@@ -67,7 +67,7 @@ type Engine struct {
 	//	default: true
 	ignoreCase bool
 
-	// default:true
+	// default: true
 	// ignoreTrailingSlash if true ignore the default trailing slash one the route
 	ignoreTrailingSlash bool
 

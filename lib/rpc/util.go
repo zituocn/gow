@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"net"
@@ -13,14 +14,11 @@ import (
 
 // byte2int  byte -> int
 func byte2int(b []byte) int {
-	str := string(b)
-	if i, err := strconv.Atoi(str); err == nil {
-		return i
-	}
-	return 0
+	return int(binary.LittleEndian.Uint32(b))
 }
 
-// GetLocalIP
+// GetLocalIP get local ip address
+//	returns address and error
 func GetLocalIP() (string, error) {
 	addr, err := net.InterfaceAddrs()
 	if err != nil {
@@ -39,7 +37,7 @@ func GetLocalIP() (string, error) {
 // serverNameKey 处理 serviceName 为 serverNameKey提供给注册服务使用
 func serverNameKey(serviceName string) string {
 	if string(serviceName[0]) != "/" {
-		serviceName = "/"+serviceName
+		serviceName = "/" + serviceName
 	}
 	if string(serviceName[len(serviceName)-1]) != "/" {
 		serviceName = serviceName + "/"
@@ -49,14 +47,14 @@ func serverNameKey(serviceName string) string {
 
 // GetRpcFuncName
 func getRpcFuncName() string {
-	pc := make([]uintptr,1)
+	pc := make([]uintptr, 1)
 	runtime.Callers(3, pc)
 	if len(pc) < 1 {
 		return ""
 	}
 	f := runtime.FuncForPC(pc[0])
 	fName := f.Name()
-	fList := strings.Split(fName,".")
+	fList := strings.Split(fName, ".")
 	if len(fList) < 1 {
 		return ""
 	}
@@ -73,13 +71,13 @@ func str2int64(str string) int64 {
 
 // int642str int64 -> string
 func int642str(i int64) string {
-	return strconv.FormatInt(i,10)
+	return strconv.FormatInt(i, 10)
 }
 
-// GetIp
+// GetIp return ip address
 func GetIp() (string, error) {
 	ip, err := externalIP()
-	return ip.String(),err
+	return ip.String(), err
 }
 
 // externalIP
@@ -93,7 +91,7 @@ func externalIP() (net.IP, error) {
 			continue // interface down
 		}
 		if iface.Flags&net.FlagLoopback != 0 {
-			continue // loopback interface
+			continue // loop back interface
 		}
 		addrs, err := iface.Addrs()
 		if err != nil {
@@ -107,7 +105,7 @@ func externalIP() (net.IP, error) {
 			return ip, nil
 		}
 	}
-	return nil, fmt.Errorf("connected to the network?")
+	return nil, fmt.Errorf("get ip address faild")
 }
 
 // getIpFromAddr
@@ -130,7 +128,7 @@ func getIpFromAddr(addr net.Addr) net.IP {
 	return ip
 }
 
-// LocalIPs return all non-loopback IPv4 addresses
+// LocalIPv4s  return all non-loop back IPv4 addresses
 func LocalIPv4s() ([]string, error) {
 	var ips []string
 	addrs, err := net.InterfaceAddrs()

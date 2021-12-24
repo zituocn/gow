@@ -14,15 +14,15 @@ import (
 
 var (
 	etcdConn *EtcdCli
-	once sync.Once
-	randEr = rand.New(rand.NewSource(time.Now().UnixNano()))
+	once     sync.Once
+	randEr   = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
-// EtcdCli
+// EtcdCli etcd cli struct
 type EtcdCli struct {
-	cli *clientv3.Client
-	EtcdAddr []string
-	ttl int // 申请租约的时间,单位秒, ttl秒后就会自动移除
+	cli         *clientv3.Client
+	EtcdAddr    []string
+	ttl         int // 申请租约的时间,单位秒, ttl秒后就会自动移除
 	connTimeOut int // 连接etcd的timeout
 }
 
@@ -31,8 +31,8 @@ func NewEtcdCli(etcdAddr []string) *EtcdCli {
 	once.Do(
 		func() {
 			etcdConn = &EtcdCli{
-				EtcdAddr: etcdAddr,
-				ttl: 2,
+				EtcdAddr:    etcdAddr,
+				ttl:         2,
 				connTimeOut: 3,
 			}
 		},
@@ -58,7 +58,7 @@ func (etcdCil *EtcdCli) Conn() (*EtcdCli, error) {
 	return etcdCil, err
 }
 
-// clientv3New
+// clientv3New returns  error
 func (etcdCil *EtcdCli) clientv3New() (err error) {
 	if len(etcdCil.EtcdAddr) < 1 {
 		err = fmt.Errorf("etcd addr is null")
@@ -76,7 +76,7 @@ func (etcdCil *EtcdCli) clientv3New() (err error) {
 // Register 注册,并创建租约
 func (etcdCil *EtcdCli) Register(key, value string) error {
 	if err := etcdCil.clientv3New(); err != nil {
-		return  err
+		return err
 	}
 	ticker := time.NewTicker(time.Second * 5)
 	go func() {
@@ -127,7 +127,7 @@ func (etcdCil *EtcdCli) withAlive(key, value string) error {
 // UnRegister 解除注册
 func (etcdCil *EtcdCli) UnRegister(key string) error {
 	if err := etcdCil.clientv3New(); err != nil {
-		return  err
+		return err
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 	etcdCil.cli.Delete(ctx, key)
@@ -137,7 +137,7 @@ func (etcdCil *EtcdCli) UnRegister(key string) error {
 // Get 获取
 func (etcdCil *EtcdCli) Get(key string) (*clientv3.GetResponse, error) {
 	if err := etcdCil.clientv3New(); err != nil {
-		return  nil, err
+		return nil, err
 	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Duration(etcdCil.connTimeOut)*time.Second)
 	defer cancelFunc()
@@ -147,10 +147,8 @@ func (etcdCil *EtcdCli) Get(key string) (*clientv3.GetResponse, error) {
 // GetMinKey 轮询获取key, 前置条件: value是用于计数的
 // key 是模糊key, 如 /A/
 func (etcdCil *EtcdCli) GetMinKey(key string) (string, error) {
-
 	response, err := etcdCil.Get(key)
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
 
@@ -161,7 +159,7 @@ func (etcdCil *EtcdCli) GetMinKey(key string) (string, error) {
 	// 采用轮询的思想, 每次拿最小被连数的那一个
 	tmp := response.Kvs[0].Key
 	tmpValue := response.Kvs[0].Value
-	for i:=1; i<len(response.Kvs); i++ {
+	for i := 1; i < len(response.Kvs); i++ {
 		if byte2int(tmpValue) > byte2int(response.Kvs[i].Value) {
 			tmp = response.Kvs[i].Key
 			tmpValue = response.Kvs[i].Value
@@ -175,7 +173,6 @@ func (etcdCil *EtcdCli) GetMinKeyCallBack(key string) error {
 	if err := etcdCil.clientv3New(); err != nil {
 		return err
 	}
-
 	// 获取
 	getResp, err := etcdCil.cli.Get(context.Background(), key)
 	if err != nil {
@@ -184,10 +181,9 @@ func (etcdCil *EtcdCli) GetMinKeyCallBack(key string) error {
 
 	if getResp.Count > 0 {
 		v := getResp.Kvs[0].Value
-		vInt := byte2int(v)+1
-		_, err = etcdCil.cli.Put(context.Background(),key, fmt.Sprintf("%d",vInt), clientv3.WithPrevKV())
+		vInt := byte2int(v) + 1
+		_, err = etcdCil.cli.Put(context.Background(), key, fmt.Sprintf("%d", vInt), clientv3.WithPrevKV())
 		if err != nil {
-			log.Printf("[ETCD] put etcd error:%s", err)
 			return err
 		}
 	}
@@ -197,10 +193,8 @@ func (etcdCil *EtcdCli) GetMinKeyCallBack(key string) error {
 // GetAllKey 模糊key查询对应的所有key
 func (etcdCil *EtcdCli) GetAllKey(key string) ([]string, error) {
 	keys := make([]string, 0)
-
 	response, err := etcdCil.Get(key)
 	if err != nil {
-		fmt.Println(err)
 		return keys, err
 	}
 
@@ -220,7 +214,7 @@ func (etcdCil *EtcdCli) GetAllKey(key string) ([]string, error) {
 func (etcdCil *EtcdCli) GetRandKey(key string) (string, error) {
 	keys, err := etcdCil.GetAllKey(key)
 	if err != nil {
-		return "",err
+		return "", err
 	}
 	l := len(keys)
 	if l < 1 {
@@ -239,7 +233,8 @@ func (etcdCil *EtcdCli) GetHash(key, h string) {
 
 }
 
-// Delete
+// Delete delete key
+//	return error
 func (etcdCil *EtcdCli) Delete(key string) error {
 	if err := etcdCil.clientv3New(); err != nil {
 		return err
@@ -248,7 +243,8 @@ func (etcdCil *EtcdCli) Delete(key string) error {
 	return err
 }
 
-// Delete All
+// DeleteAll delete all key by Prefix
+//	returns error
 func (etcdCil *EtcdCli) DeleteAll(key string) error {
 	if err := etcdCil.clientv3New(); err != nil {
 		return err
@@ -256,4 +252,3 @@ func (etcdCil *EtcdCli) DeleteAll(key string) error {
 	_, err := etcdCil.cli.Delete(context.TODO(), key, clientv3.WithPrefix())
 	return err
 }
-

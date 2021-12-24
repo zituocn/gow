@@ -44,7 +44,7 @@ template_left = {{      # golang 模板左符号
 template_left = }}      # golang 模板右符号 
 session_on = false      # 是否打开session
 gzip_on = true          # 是否打开gzip 
-ignore_case = true      # 是否忽略大小写
+ignore_case = true      # 是否忽略路由大小写
 ```
 
 
@@ -62,7 +62,7 @@ template_left = {{      # golang 模板左符号
 template_left = }}      # golang 模板右符号 
 session_on = false      # 是否打开session
 gzip_on = true          # 是否打开gzip 
-ignore_case = true      # 是否忽略大小写
+ignore_case = true      # 是否忽略路由大小写
 ```
 
 

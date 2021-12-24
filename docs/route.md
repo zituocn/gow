@@ -1,6 +1,6 @@
 # Route
 
-gow 需要在代码中，手动配置路由来实现不同的访问动词和地址
+gow 需要在代码中，手动书写路由来实现不同的访问动词和地址
 
 
 ## *感谢*
@@ -22,7 +22,7 @@ gow 中的 route 实现机制，融合了 gin 和 mux .
 ```
 
 
-## 标准动词
+## 访问动词
 
 ```go
 GET POST PUT DELETE OPTIONS HEAD PATCH Any
@@ -194,7 +194,7 @@ func main() {
 
 ## 路由大小写
 
-默认情况下，路由已忽略字母大小写：
+默认情况下，路由时忽略字母大小写：
 
 ```go
 func main(){
@@ -203,8 +203,6 @@ func main(){
     r.Run(8080)
 }
 ```
-
-以下访问也能匹配
 
 ```sh
 curl -i http://127.0.0.1:8080/user/1 
@@ -222,20 +220,21 @@ Content-Length: 94
 }
 ```
 
-
-可以通过以下方法来设置不忽略大小写
+可以通过以下方法来设置忽略路由的大小写
 
 ```go
 package main
 
 func main(){
     r:=gow.Default()
-    // 不忽略大小写
-    r.SetIgnoreCase(false)  
+    // 忽略大小写
+    r.SetIgnoreCase(true)  
     r.GET("/User/1",UserHandler) 
     r.Run(8080)
 }
 ```
+
+以下URL不能访问：
 
 ```sh
 curl -i http://127.0.0.1:8080/user/1
@@ -246,15 +245,53 @@ Date: Fri, 11 Jun 2021 04:49:22 GMT
 Content-Length: 18
 
 404 page not found
-
 ```
 
-也可以在统一配置文件中设置开关 (可参考: [统一配置文件](https://github.com/zituocn/gow/blob/main/docs/config.md))
+
+
+
+也可以在统一配置文件中的开关，来实现忽略与否 (可参考: [统一配置文件](https://github.com/zituocn/gow/blob/main/docs/config.md))
 
 ```sh
-ignore_case = false
+ignore_case = false # 不忽略
+ignore_case = true  # 忽略
 ```
 
+## 路由尾部斜杠 "/"
+
+访问网站时，可能经常会忽略路由地址的 "/"，即有无 "/"，都能访问。但在API或某些特殊环境下，尾部斜杠不能忽略。
+
+可以通过以下访问，选择是否忽略路由的尾部"/"
+
+```go
+package main
+
+func main(){
+    r:=gow.Default()
+
+    // 设置是否忽略尾部 "/"
+    r.SetIgnoreTrailingSlash(true)  
+    
+    // 不忽略尾部 "/"
+    // r.SetIgnoreTrailingSlash(false)
+
+    r.GET("/user/1",UserHandler) 
+    r.Run(8080)
+}
+```
+
+当用户使用以下方式时，都能命中路由
+
+```sh
+curl -i http://127.0.0.1:8080/user/1/
+```
+
+```sh
+curl -i http://127.0.0.1:8080/user/1
+
+```
+
+gow 默认情况下，会忽略地址后的 "/"
 
 ## 更多文档
 
