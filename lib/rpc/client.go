@@ -12,6 +12,107 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// Client GRPC Client struct
+type Client struct {
+	serverAddr  string
+	etcdAddr    []string
+	clientName  string
+	serviceName string
+	times       int
+	retry       int
+	retryTime   time.Duration
+}
+
+// ClientArg GRPC Client arg struct
+type ClientArg struct {
+	ServerAddr  string		// 直连  *必填
+	EtcdAddr    string		// 使用发现服务 *必填
+	ClientName  string
+	ServiceName string		// *必填
+}
+
+// NewClient return grpc Client obj
+func NewClient(dis ClientArg) (*Client, error) {
+	etcdAddr := strings.Split(dis.EtcdAddr, ",")
+	if len(etcdAddr) < 1 {
+		return nil, errors.New("[RPC] 参数错误: etcdAddress is null")
+	}
+	if len(dis.ServiceName) < 1 {
+		return nil, fmt.Errorf("[RPC] 参数错误: ServiceName is null")
+	}
+
+	return &Client{
+		serverAddr:  dis.ServerAddr,
+		etcdAddr:    etcdAddr,
+		clientName:  dis.ClientName,
+		serviceName: dis.ServiceName,
+		times:       0,		// timestamp
+		retry:       20,	// retry 20 times
+		retryTime:   50 * time.Millisecond,
+	}, nil
+}
+
+// Conn 直连
+// return grpc.ClientConn, context.Context, err
+func (c *Client) Conn() (client *grpc.ClientConn, ctx context.Context, err error) {
+	client, err = newClient(c.serverAddr)
+	ctx = setCtx(c.serviceName, c.clientName, client)
+	return
+}
+
+// Min  通过etcd发现服务获取grpc连接; 负载均衡 - 最小连接数法;
+// return grpc.ClientConn, context.Context, err
+func (c *Client) Min() (client *grpc.ClientConn, ctx context.Context, err error) {
+	// 避免一直重试
+	if c.times > c.retry {
+		err = errors.New("[ETCD] 没有发现服务")
+		return
+	}
+
+	NewEtcdCli(c.etcdAddr)
+	grpcIPKey, _ := etcdConn.GetMinKey(serverNameKey(c.serviceName))
+	grpcIPList := strings.Split(grpcIPKey, "/")
+	if len(grpcIPList) < 1 {
+		time.Sleep(c.retryTime)
+		c.times++
+		return c.Min()
+	}
+
+	grpcIP := grpcIPList[len(grpcIPList)-1]
+	client, err = newClient(grpcIP)
+	if err != nil || client == nil {
+		time.Sleep(c.retryTime)
+		c.times++
+		return c.Min()
+	}
+
+	// 使用GetMinKey方式需要执行GetMinKeyCallBack
+	_ = etcdConn.GetMinKeyCallBack(grpcIPKey)
+	ctx = setCtx(c.serviceName, c.clientName, client)
+	return
+}
+
+// Rand  通过etcd发现服务获取grpc连接; 负载均衡 - 随机法;
+// return grpc.ClientConn, context.Context, err
+func (c *Client) Rand() (client *grpc.ClientConn, ctx context.Context, err error) {
+	if c.times > c.retry {
+		err = errors.New("[ETCD] 没有发现服务")
+		return
+	}
+
+	NewEtcdCli(c.etcdAddr)
+	serviceNameKey := serverNameKey(c.serviceName)
+	grpcIP, _ := etcdConn.GetRandKey(serviceNameKey)
+	client, err = newClient(grpcIP)
+	if err != nil || client == nil {
+		time.Sleep(c.retryTime) // 连不上可能是服务还在启动中, 等待50ms从新获取
+		c.times++
+		return c.Rand()
+	}
+
+	ctx = setCtx(c.serviceName, c.clientName, client)
+	return
+}
 
 // newClient return a new rpc client
 func newClient(server string) (client *grpc.ClientConn, err error) {
@@ -91,6 +192,7 @@ func streamInterceptorClient(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 			break
 		}
 	}
+
 	s, err := streamer(ctx, desc, cc, method, opts...)
 	if err != nil {
 		return nil, err
@@ -98,7 +200,7 @@ func streamInterceptorClient(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 	return newWrappedStreamClient(s), nil
 }
 
-// setCtx
+// setCtx set context
 func setCtx(serviceName, myName string, grpcConn *grpc.ClientConn) context.Context {
 	if grpcConn == nil {
 		return nil
@@ -109,110 +211,4 @@ func setCtx(serviceName, myName string, grpcConn *grpc.ClientConn) context.Conte
 		"ServiceName", serviceName,
 	}
 	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs(kv...))
-}
-
-// discovery 发现服务
-type discovery struct {
-	serverAddr  string
-	etcdAddr    []string
-	clientName  string
-	serviceName string
-	isLog       bool
-	times       int
-	retry       int // 重试次数
-	retryTime   time.Duration
-}
-
-// ClientArg 创建发现服务对象参数
-type ClientArg struct {
-	ServerAddr  string
-	EtcdAddr    string
-	ClientName  string
-	ServiceName string
-	OpenLog     bool
-}
-
-// NewClient 创建客户端对象
-func NewClient(dis ClientArg) (*discovery, error) {
-	etcdAddr := strings.Split(dis.EtcdAddr, ",")
-	if len(etcdAddr) < 1 {
-		return nil, errors.New("[RPC] 参数错误: etcdAddress is null")
-	}
-	if len(dis.ServiceName) < 1 {
-		return nil, fmt.Errorf("[RPC] 参数错误: ServiceName is null")
-	}
-
-	return &discovery{
-		serverAddr:  dis.ServerAddr,
-		etcdAddr:    etcdAddr,
-		clientName:  dis.ClientName,
-		serviceName: dis.ServiceName,
-		isLog:       dis.OpenLog,
-		times:       0,
-		retry:       20,
-		retryTime:   50 * time.Millisecond,
-	}, nil
-}
-
-// Conn 获取连接
-func (c *discovery) Conn() (client *grpc.ClientConn, ctx context.Context, err error) {
-	client, err = newClient(c.serverAddr)
-	ctx = context.Background()
-	return
-}
-
-// Min  发现服务获取grpc连接; 负载均衡 - 最小连接数法;
-func (c *discovery) Min() (client *grpc.ClientConn, ctx context.Context, err error) {
-	// 避免一直重试
-	if c.times > c.retry {
-		err = errors.New("[ETCD] 没有发现服务")
-	}
-	NewEtcdCli(c.etcdAddr)
-	grpcIPKey, _ := etcdConn.GetMinKey(serverNameKey(c.serviceName))
-	grpcIPList := strings.Split(grpcIPKey, "/")
-	if len(grpcIPList) < 1 {
-		time.Sleep(c.retryTime) // 没有获取到服务地址, 可能是服务还在启动中, 等待50ms从新获取
-		c.times++
-		return c.Min()
-	}
-	grpcIP := grpcIPList[len(grpcIPList)-1]
-	client, err = newClient(grpcIP)
-	if err != nil || client == nil {
-		time.Sleep(c.retryTime) // 连不上可能是服务还在启动中, 等待50ms从新获取
-		c.times++
-		return c.Min()
-	}
-
-	// 使用GetMinKey方式需要执行GetMinKeyCallBack
-	_ = etcdConn.GetMinKeyCallBack(grpcIPKey)
-	if c.isLog {
-		ctx = setCtx(c.serviceName, c.clientName, client)
-	} else {
-		ctx = context.Background()
-	}
-
-	return
-}
-
-// Rand  发现服务获取grpc连接; 负载均衡 - 随机法;
-func (c *discovery) Rand() (client *grpc.ClientConn, ctx context.Context, err error) {
-	if c.times > c.retry {
-		err = errors.New("[ETCD] 没有发现服务")
-	}
-	NewEtcdCli(c.etcdAddr)
-	serviceNameKey := serverNameKey(c.serviceName)
-	grpcIP, _ := etcdConn.GetRandKey(serviceNameKey)
-	client, err = newClient(grpcIP)
-	if err != nil || client == nil {
-		time.Sleep(c.retryTime) // 连不上可能是服务还在启动中, 等待50ms从新获取
-		c.times++
-		return c.Rand()
-	}
-
-	if c.isLog {
-		ctx = setCtx(c.serviceName, c.clientName, client)
-	} else {
-		ctx = context.Background()
-	}
-	return
 }

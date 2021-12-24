@@ -40,19 +40,19 @@ func NewEtcdCli(etcdAddr []string) *EtcdCli {
 	return etcdConn
 }
 
-// SetTTl 设置ttl
+// SetTTl set ttl
 func (etcdCil *EtcdCli) SetTTl(ttl int) *EtcdCli {
 	etcdCil.ttl = ttl
 	return etcdCil
 }
 
-// SetConnTimeOut 设置连接etcd的timeout
+// SetConnTimeOut set etcd conn timeout
 func (etcdCil *EtcdCli) SetConnTimeOut(timeOut int) *EtcdCli {
 	etcdCil.connTimeOut = timeOut
 	return etcdCil
 }
 
-// Conn 连接ETCD
+// Conn return *EtcdCli error
 func (etcdCil *EtcdCli) Conn() (*EtcdCli, error) {
 	err := etcdCil.clientv3New()
 	return etcdCil, err
@@ -134,7 +134,7 @@ func (etcdCil *EtcdCli) UnRegister(key string) error {
 	return nil
 }
 
-// Get 获取
+// Get return *clientv3.GetResponse error
 func (etcdCil *EtcdCli) Get(key string) (*clientv3.GetResponse, error) {
 	if err := etcdCil.clientv3New(); err != nil {
 		return nil, err
@@ -144,8 +144,7 @@ func (etcdCil *EtcdCli) Get(key string) (*clientv3.GetResponse, error) {
 	return etcdCil.cli.Get(ctx, key, clientv3.WithPrefix())
 }
 
-// GetMinKey 轮询获取key, 前置条件: value是用于计数的
-// key 是模糊key, 如 /A/
+// GetMinKey 获取被计数最少的key
 func (etcdCil *EtcdCli) GetMinKey(key string) (string, error) {
 	response, err := etcdCil.Get(key)
 	if err != nil {
@@ -156,7 +155,6 @@ func (etcdCil *EtcdCli) GetMinKey(key string) (string, error) {
 		return "", fmt.Errorf("[ETCD] 在注册表没有找到服务")
 	}
 
-	// 采用轮询的思想, 每次拿最小被连数的那一个
 	tmp := response.Kvs[0].Key
 	tmpValue := response.Kvs[0].Value
 	for i := 1; i < len(response.Kvs); i++ {
@@ -168,12 +166,12 @@ func (etcdCil *EtcdCli) GetMinKey(key string) (string, error) {
 	return string(tmp), nil
 }
 
-// GetMinKeyCallBack 与 EtcdCli.GetMinKey 配合使用客户端连接成功后调用
+// GetMinKeyCallBack 是GetMinKey方法的回调
 func (etcdCil *EtcdCli) GetMinKeyCallBack(key string) error {
 	if err := etcdCil.clientv3New(); err != nil {
 		return err
 	}
-	// 获取
+
 	getResp, err := etcdCil.cli.Get(context.Background(), key)
 	if err != nil {
 		return err
@@ -190,7 +188,7 @@ func (etcdCil *EtcdCli) GetMinKeyCallBack(key string) error {
 	return nil
 }
 
-// GetAllKey 模糊key查询对应的所有key
+// GetAllKey 使用前缀key查询值
 func (etcdCil *EtcdCli) GetAllKey(key string) ([]string, error) {
 	keys := make([]string, 0)
 	response, err := etcdCil.Get(key)
@@ -210,7 +208,7 @@ func (etcdCil *EtcdCli) GetAllKey(key string) ([]string, error) {
 	return keys, nil
 }
 
-//GetRandKey 模糊key查询随机反回一个key
+//GetRandKey 使用前缀key查询随机反回一个
 func (etcdCil *EtcdCli) GetRandKey(key string) (string, error) {
 	keys, err := etcdCil.GetAllKey(key)
 	if err != nil {

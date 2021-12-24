@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -35,7 +33,7 @@ func GetLocalIP() (string, error) {
 	return "", fmt.Errorf("not get local ip")
 }
 
-// serverNameKey 处理 serviceName 为 serverNameKey提供给注册服务使用
+// serverNameKey ServiceName to ServiceNameKey
 func serverNameKey(serviceName string) string {
 	if string(serviceName[0]) != "/" {
 		serviceName = "/" + serviceName
@@ -44,22 +42,6 @@ func serverNameKey(serviceName string) string {
 		serviceName = serviceName + "/"
 	}
 	return serviceName
-}
-
-// GetRpcFuncName
-func getRpcFuncName() string {
-	pc := make([]uintptr, 1)
-	runtime.Callers(3, pc)
-	if len(pc) < 1 {
-		return ""
-	}
-	f := runtime.FuncForPC(pc[0])
-	fName := f.Name()
-	fList := strings.Split(fName, ".")
-	if len(fList) < 1 {
-		return ""
-	}
-	return fList[len(fList)-1]
 }
 
 // str2int64 string -> int64
@@ -81,7 +63,7 @@ func GetIp() (string, error) {
 	return ip.String(), err
 }
 
-// externalIP
+// externalIP return net.IP address
 func externalIP() (net.IP, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -109,7 +91,7 @@ func externalIP() (net.IP, error) {
 	return nil, fmt.Errorf("get ip address faild")
 }
 
-// getIpFromAddr
+// getIpFromAddr return net.IP
 func getIpFromAddr(addr net.Addr) net.IP {
 	var ip net.IP
 	switch v := addr.(type) {
@@ -163,6 +145,7 @@ type worker struct {
 	seq       int64
 }
 
+// ID return id
 func ID() string {
 	w := newWorker(1)
 	return int642str(w.next())
@@ -196,11 +179,11 @@ func (w *worker) next() int64 {
 		w.seq = 0
 	}
 	w.timestamp = now
-	ID := int64((now-epoch)<<timeShift | (w.workerId << workerShift) | (w.seq))
+	ID := (now-epoch)<<timeShift | (w.workerId << workerShift) | (w.seq)
 	return ID + int64(w.getRankInt(6))
 }
 
-// getRankInt
+// getRankInt get rank int
 func (w *worker) getRankInt(e int) int {
 	rand.Seed(time.Now().UnixNano())
 	x := rand.Intn(e)

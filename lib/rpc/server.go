@@ -21,17 +21,17 @@ import (
 type Server struct {
 	Listener   net.Listener
 	Server     *grpc.Server
-	Port       int    // 端口
-	Name       string // 服务昵称
+	Port       int
+	Name       string
 	EtcdAddr   []string
 	isRegister bool
 }
 
-// ServerArg grpc 服务端参数
+// ServerArg GRPC Server Arg struct
 type ServerArg struct {
 	IP       string
-	Port     int
-	Name     string
+	Port     int	// *必填
+	Name     string	// *必填
 	EtcdAddr string // 多个地址必须使用","分开; 如: 192.168.0.1:2379,192.168.0.2:2379
 	Register bool   // 是否启用服务注册
 }
@@ -47,7 +47,7 @@ func NewServer(grpcAddr ServerArg) (server *Server, err error) {
 		return
 	}
 	if grpcAddr.Register && len(grpcAddr.EtcdAddr) < 1 {
-		err = errors.New("[RPC]服务注册缺少etcd参数")
+		err = errors.New("[RPC] 服务注册缺少etcd参数")
 		return
 	}
 
@@ -126,9 +126,9 @@ func (m *Server) register() {
 	key := fmt.Sprintf("%s%s:%d", serverNameKey(m.Name), ip, m.Port)
 	err = etcdConn.Register(key, "0")
 	if err != nil {
-		panic("[致命启动错误] 服务注册失败 err = " + err.Error())
+		panic("[RPC] grpc服务注册失败 err = " + err.Error())
 	} else {
-		logy.Infof("[RPC] 服务注册 Register Succeed; key = %s ", key)
+		logy.Infof("[RPC] Register Succeed; Key = %s ", key)
 	}
 
 	ch := make(chan os.Signal, 1)
@@ -226,7 +226,7 @@ func valid(authorization []string) bool {
 	return token == "some-secret-token"
 }
 
-// getValue
+// getValue get metadata value
 func getValue(md metadata.MD, key string) string {
 	if v, ok := md[key]; ok {
 		if len(v) > 0 {
