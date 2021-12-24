@@ -55,7 +55,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 			method,
 			err)
 	} else {
-		logy.Infof("[GRPC] %v | %s(%v)->%s(%v) | %s ",
+		logy.Infof("[GRPC] %13v | %s(%v)->%s(%v) | %s ",
 			time.Now().Sub(startTime),
 			clientName,
 			clientIp,

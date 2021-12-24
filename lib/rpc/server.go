@@ -173,7 +173,7 @@ func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServ
 			info.FullMethod,
 			err)
 	} else {
-		logy.Infof("[GRPC] %v | %s(%v)->%s(%v) | %s ",
+		logy.Infof("[GRPC] %13v | %s(%v)->%s(%v) | %s ",
 			time.Now().Sub(startTime),
 			clientName,
 			pr.Addr.String(),
