@@ -15,29 +15,37 @@ import (
 )
 
 const (
-	bodyType       = "application/json"
-	createOrderUrl = "https://developer.toutiao.com/api/apps/ecpay/v1/create_order"
-	queryOrderUrl  = "https://developer.toutiao.com/api/apps/ecpay/v1/query_order"
+	bodyType        = "application/json"
+	createOrderUrl  = "https://developer.toutiao.com/api/apps/ecpay/v1/create_order"
+	queryOrderUrl   = "https://developer.toutiao.com/api/apps/ecpay/v1/query_order"
+	createRefundUrl = "https://developer.toutiao.com/api/apps/ecpay/v1/create_refund"
+	queryRefundUrl  = "https://developer.toutiao.com/api/apps/ecpay/v1/query_refund"
 )
 
 type Client struct {
-	AppId     string //传入的appID
-	NotifyURL string //异步通知地址
-	OrderTime int    //订单有效分钟数
-	SALT      string //向小程序平台发送请求时的密钥
-	Token     string //小程序平台向开发者服务端发送请求时的密钥
-	Extra     string //开发者自定义字段，回调原样回传
+	AppId           string //传入的appID
+	NotifyURL       string //异步通知地址
+	OrderTime       int    //订单有效分钟数
+	SALT            string //向小程序平台发送请求时的密钥
+	Token           string //小程序平台向开发者服务端发送请求时的密钥
+	Extra           string //开发者自定义字段，回调原样回传
+	RefundNotifyUrl string //退款回调地址
 }
 
 // NewClient 一个新的客户端
-func NewClient(appId, SALT, token string, notifyUrl string, orderTime int) *Client {
+func NewClient(appId, SALT, token, extra string, notifyUrl string, orderTime int) *Client {
 	return &Client{
 		AppId:     appId,
 		NotifyURL: notifyUrl,
 		OrderTime: orderTime,
 		SALT:      SALT,
 		Token:     token,
+		Extra:     extra,
 	}
+}
+
+func (c *Client) SetRefundNotifyUrl(refundNotifyUrl string) {
+	c.RefundNotifyUrl = refundNotifyUrl
 }
 
 // CreateOrder 预下单
@@ -122,6 +130,101 @@ func (c *Client) Notify(req *http.Request) (msgData *NotifyMsgData, ret *NotifyR
 		return nil, nil, errors.New("签名不正确")
 	} else {
 		return nil, nil, errors.New("回调类型不为支付成功")
+	}
+}
+
+// Refund 申请退款
+func (c *Client) Refund(outTradeNo, outRefundNo, refundDesc string, refundFee int64) (refundNo string,err error) {
+	params := make(Params)
+	params.SetString("out_order_no", outTradeNo)
+	params.SetString("out_refund_no", outRefundNo)
+	params.SetString("reason", refundDesc)
+	params.SetInt64("refund_amount", refundFee)
+	if c.Extra != "" {
+		params.SetString("cp_extra", c.Extra) //开发者自定义字段，回调原样回传
+	}
+	params.SetString("notify_url", c.RefundNotifyUrl)
+
+	logy.Infof("c.RefundNotifyUrl:%v，outOrderNo:%v, outRefundNo:%v ",c.RefundNotifyUrl,outTradeNo,outRefundNo)
+
+	params.SetInt64("disable_msg", int64(0)) //是否屏蔽担保支付的推送消息，1-屏蔽 0-非屏蔽，
+
+	resp, err := c.post(createRefundUrl, params)
+	if err != nil {
+		logy.Errorf("申请退款出错:%v", err)
+		return
+	}
+	data := new(RefundResp)
+	if err = json.Unmarshal([]byte(resp), &data); err != nil {
+		logy.Errorf("解析预下单响应参数出错:%v", err)
+		return
+	}
+	//状态码 0-业务处理成功
+	if data.ErrNo == 0 {
+		refundNo = data.RefundNo
+	} else {
+		logy.Errorf("申请退款业务处理失败,错误码：%v,错误信息:%v", data.ErrNo, data.ErrTips)
+		return
+	}
+	return
+}
+
+// RefundQuery 退款查询
+func (c *Client) RefundQuery(outRefundNo string)(rslt *RefundQueryData,err error) {
+	params := make(Params)
+	params.SetString("out_refund_no", outRefundNo)
+	resp, err := c.post(queryRefundUrl, params)
+	if err != nil {
+		logy.Errorf("请求退款查询出错:%v", err)
+		return
+	}
+	//fmt.Println("resp:",resp)
+	ret := new(RefundQueryResp)
+	err = json.Unmarshal([]byte(resp), &ret)
+	if err != nil {
+		logy.Errorf("解析退款查询响应参数出错:%v", err)
+		return
+	}
+	//状态码 0-业务处理成功
+	if ret.ErrNo == 0 {
+		rslt = ret.RefundInfo
+	} else {
+		logy.Errorf("退款查询业务处理失败,错误码：%v,错误信息:%v", ret.ErrNo, ret.ErrTips)
+		return
+	}
+	return
+}
+
+// RefundNotify 退款回调
+func (c *Client) RefundNotify(req *http.Request) (msgData *RefundNotifyMsgData, ret *NotifyReturn, err error){
+	content, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return
+	}
+	// 写回 body 内容
+	req.Body = ioutil.NopCloser(bytes.NewReader(content))
+	params := StringToMap(content)
+	var returntype string
+	if params.ContainsKey("type") {
+		returntype = params.GetString("type")
+	} else {
+		return nil, nil, errors.New("没有回调类型标记")
+	}
+	//回调类型标记，退款回调为"refund"
+	if returntype == "refund" {
+		//验证签名
+		if c.ValidSign(params) {
+			msg := params.GetString("msg")
+			msgData = new(RefundNotifyMsgData)
+			json.Unmarshal([]byte(msg), &msgData)
+			ret = new(NotifyReturn)
+			ret.ErrNo = 0
+			ret.ErrTip = "success"
+			return
+		}
+		return nil, nil, errors.New("签名不正确")
+	} else {
+		return nil, nil, errors.New("回调类型错误")
 	}
 }
 

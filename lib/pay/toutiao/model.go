@@ -65,3 +65,32 @@ type CreateOrderReq struct {
 	NotifyUrl   string `json:"notify_url"`
 	DisableMsg  int64  `json:"disable_msg"`
 }
+
+//申请退款应答参数
+type RefundResp struct {
+	ErrNo    int64  `json:"err_no"`
+	ErrTips  string `json:"err_tips"`
+	RefundNo string `json:"refund_no"`
+}
+
+//退款回调信息包括 msg 信息为以下内容序列化得到的 json 字符串
+type RefundNotifyMsgData struct {
+	Appid        string `json:"appid"`
+	CpRefundno   string `json:"cp_refundno"`   //开发者自定义的退款单号
+	CpExtra      string `json:"cp_extra"`      //预下单时开发者传入字段
+	Status       string `json:"status"`        //退款状态 PROCESSING-处理中|SUCCESS-成功|FAIL-失败
+	RefundAmount int64  `json:"refund_amount"` //退款金额
+}
+
+//查询退款应答参数
+type RefundQueryResp struct {
+	ErrNo      int64            `json:"err_no"`
+	ErrTips    string           `json:"err_tips"`
+	RefundInfo *RefundQueryData `json:"refundInfo"`
+}
+
+type RefundQueryData struct {
+	RefundNo     string `json:"refund_no"`
+	RefundAmount int64  `json:"refund_amount"`
+	RefundStatus string `json:"refund_status"` //退款状态，成功-SUCCESS；失败-FAIL
+}

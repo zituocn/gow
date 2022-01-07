@@ -342,6 +342,7 @@ type FastpayTradeRefundQueryResponse struct {
 		TotalAmount  string `json:"total_amount"`   // 发该笔退款所对应的交易的订单金额
 		RefundAmount string `json:"refund_amount"`  // 本次退款请求，对应的退款金额
 		TradeNo      string `json:"trade_no"`       // 支付宝交易号
+		RefundStatus string `json:"refund_status"`  // 退款状态
 	} `json:"alipay_trade_fastpay_refund_query_response"`
 	Sign string `json:"sign"`
 }
