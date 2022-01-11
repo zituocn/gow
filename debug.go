@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 var (
@@ -21,6 +22,7 @@ func IsDebugging() bool {
 func debugPrint(values ...interface{}) {
 	var buffer bytes.Buffer
 	buffer.WriteString("[gow-debug] ")
+	buffer.WriteString(time.Now().Format("2006/01/02 15:04:05")+" ")
 	for i := 0; i < len(values); i++ {
 		buffer.WriteString("%v ")
 	}
