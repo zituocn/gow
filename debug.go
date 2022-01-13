@@ -26,5 +26,5 @@ func debugPrint(values ...interface{}) {
 	for i := 0; i < len(values); i++ {
 		buffer.WriteString("%v ")
 	}
-	fmt.Fprintf(DefaultWriter, buffer.String(), values...)
+	fmt.Fprintf(DefaultWriter, buffer.String()+"\n", values...)
 }

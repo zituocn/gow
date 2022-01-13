@@ -1,3 +1,9 @@
+/*
+gow context
+sam
+2021-01-14
+ */
+
 package gow
 
 import (
@@ -6,6 +12,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/zituocn/gow/lib/logy"
 	"gopkg.in/yaml.v3"
 	"io"
 	"io/ioutil"
@@ -103,6 +110,7 @@ func (c *Context) FullPath() string {
 }
 
 // Next c.Next method
+//	call func: c.handler[i](c)
 func (c *Context) Next() {
 	c.index++
 	for c.index < int8(len(c.handlers)) {
@@ -353,6 +361,7 @@ func (c *Context) GetIP() (ip string) {
 }
 
 // ClientIP return client ip
+//	return c.Request.RemoteAddr[0]
 func (c *Context) ClientIP() (ip string) {
 	addr := c.Request.RemoteAddr
 	str := strings.Split(addr, ":")
@@ -840,7 +849,9 @@ func (c *Context) Render(code int, name string, data interface{}) {
 	if err := c.engine.Render.Render(c.Writer, name, data); err != nil {
 		//ignore "broken pipe" error
 		if !errors.Is(err, syscall.EPIPE) {
-			debugPrint("html render error: %s", err.Error())
+			//use logy record html render error
+			//2022-01-14 sam
+			logy.Errorf("html render error: %v", err)
 		}
 	}
 }
@@ -881,7 +892,7 @@ func (c *Context) writeServerUnavailable(text string) {
 	c.Status(http.StatusServiceUnavailable)
 	_, err := c.Writer.Write([]byte(text))
 	if err != nil {
-		debugPrint("c.Write.write Error: %v ", err)
+		debugPrint("c.Write.write Error: ", err)
 	}
 }
 

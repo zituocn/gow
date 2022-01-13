@@ -116,7 +116,7 @@ func (m HTMLRender) renderTemplate() (bytes.Buffer, error) {
 	return buf, ExecuteTemplate(&buf, m.Name, m.ViewPath, m.RunMode, m.Data)
 }
 
-// addViewPath addViewPath
+// addViewPath ad viewPath to system
 func addViewPath(viewPath string) error {
 	if _, exist := beeViewPathTemplates[viewPath]; exist {
 		return nil
