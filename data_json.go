@@ -90,7 +90,7 @@ func (c *Context) ServerDataJSON(statusCode int, args ...interface{}) {
 		}
 	}
 	if err != nil {
-		debugPrint("[error] %s %s", c.Request.URL.String(), err.Error())
+		debugPrint("[error]", c.Request.URL.String(), err.Error())
 	}
 	if code == 0 && msg == "" {
 		msg = "success"
