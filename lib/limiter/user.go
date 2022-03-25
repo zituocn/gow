@@ -36,10 +36,11 @@ func (m *UserLimiter) addUser(uid int64) *rate.Limiter {
 // GetLimiter return *rate.Limiter
 func (m *UserLimiter) GetLimiter(uid int64) *rate.Limiter {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	limiter, ok := m.users[uid]
 	if !ok {
+		m.mu.Unlock()
 		return m.addUser(uid)
 	}
+	m.mu.Unlock()
 	return limiter
 }
