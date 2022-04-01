@@ -409,6 +409,22 @@ func (m *RDSCommon) DelZSetMember(key string, member interface{}) error {
 	return err
 }
 
+// Zincrby 增加元素的score
+func (m *RDSCommon) Zincrby(key string, score int64, value interface{}) error {
+	rc := m.client.Get()
+	defer rc.Close()
+	_, err := rc.Do("ZINCRBY", key, score, value)
+	return err
+}
+
+// Zscore 获取元素的score
+func (m *RDSCommon) Zscore(key string, value interface{}) (int64, error) {
+	rc := m.client.Get()
+	defer rc.Close()
+	score, err := redis.Int64(rc.Do("ZSCORE", key, value))
+	return score, err
+}
+
 /************************************/
 /********     REDIS set 	 ********/
 /************************************/
