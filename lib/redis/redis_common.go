@@ -259,6 +259,13 @@ func (m *RDSCommon) HashFieldExists(key, field string) (bool, error) {
 	return redis.Bool(rc.Do("HEXISTS", redis.Args{}.Add(key).Add(field)...))
 }
 
+// Hdel 用于删除哈希表 key 中的一个或多个指定字段，不存在的字段将被忽略。
+func (m *RDSCommon) Hdel(key, field string) (bool, error) {
+	rc := m.client.Get()
+	defer rc.Close()
+	return redis.Bool(rc.Do("HDEL", redis.Args{}.Add(key).Add(field)...))
+}
+
 /************************************/
 /********     REDIS list 	 ********/
 /************************************/
@@ -423,6 +430,17 @@ func (m *RDSCommon) Zscore(key string, value interface{}) (int64, error) {
 	defer rc.Close()
 	score, err := redis.Int64(rc.Do("ZSCORE", key, value))
 	return score, err
+}
+
+// Zpopmax  命令删除并返回有序集合 key 中的最多 count 个具有最高得分的成员。
+func (m *RDSCommon) Zpopmax(key string) (ss []string, err error) {
+	rc := m.client.Get()
+	defer rc.Close()
+	values, err := redis.Values(rc.Do("ZPOPMAX", key))
+	if err = redis.ScanSlice(values, &ss); err != nil {
+		return
+	}
+	return
 }
 
 /************************************/
