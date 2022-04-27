@@ -105,7 +105,7 @@ func newRedis(rc *RedisConfig) {
 		DB:           rc.DB,
 		PoolSize:     rc.Pool,
 		IdleTimeout:  30 * time.Second,
-		DialTimeout:  5 * time.Minute,
+		DialTimeout:  5 * time.Second,
 		MaxRetries:   -1,
 		MinIdleConns: 10,
 	}
