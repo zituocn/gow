@@ -501,3 +501,22 @@ func (m *RDSCommon) SetBit(key string, offset int64, v int) (err error) {
 	_, err = redis.Int(rc.Do("SETBIT", key, offset, v))
 	return
 }
+
+// 获得所有的key
+func (m *RDSCommon) GetKeys(key string)(slice []string, err error){
+	rc := m.client.Get()
+	defer rc.Close()
+	values,err := redis.Values(rc.Do("keys",key))
+	if err != nil{
+		return
+	}
+	err = redis.ScanSlice(values,&slice)
+	if err != nil {
+		return
+	}
+	if len(slice) <= 0 {
+		err = fmt.Errorf("未查询到数据")
+		return
+	}
+	return
+}

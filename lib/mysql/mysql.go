@@ -38,7 +38,7 @@ func InitDefaultDB(db *DBConfig) (err error) {
 		return
 	}
 	defaultDBName = db.Name
-	dbs = make(map[string]*gorm.DB)
+	dbs = make(map[string]*gorm.DB,1)
 	newORM(db)
 	return
 }
@@ -49,7 +49,7 @@ func InitDB(list []*DBConfig) (err error) {
 		err = fmt.Errorf("没有需要init的DB")
 		return
 	}
-	dbs = make(map[string]*gorm.DB)
+	dbs = make(map[string]*gorm.DB,len(list))
 	for _, item := range list {
 		newORM(item)
 	}
@@ -57,14 +57,14 @@ func InitDB(list []*DBConfig) (err error) {
 	return
 }
 
-// newORM newORM
+// newORM a new ORM
 func newORM(db *DBConfig) {
 	var (
 		orm *gorm.DB
 		err error
 	)
 	if db.User == "" || db.Password == "" || db.Host == "" || db.Port == 0 {
-		panic(fmt.Sprintf("[DB]-[%v] 数据库配置信息获取失败", db.Name))
+		panic(fmt.Sprintf("[DB]-[%s] 数据库配置信息获取失败", db.Name))
 	}
 
 	str := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", db.User, db.Password, db.Host, db.Port, db.Name) + "?charset=utf8mb4&parseTime=true&loc=Local"

@@ -9,6 +9,7 @@ require (
 	github.com/clbanning/mxj v1.8.4
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gkzy/gini v0.1.0
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gomodule/redigo v1.8.6
 	github.com/imroc/req v0.3.2
 	github.com/jinzhu/gorm v1.9.16
