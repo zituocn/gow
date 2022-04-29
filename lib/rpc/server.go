@@ -4,17 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/zituocn/gow/lib/logy"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
-
-	"github.com/zituocn/gow/lib/logy"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/peer"
 )
 
 // Server GRPC Server struct
@@ -147,32 +144,9 @@ func (m *Server) register() {
 
 }
 
-// unaryInterceptor  中间件打印日志
+// unaryInterceptor  服务端中间件
 func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	startTime := time.Now()
-	pr, _ := peer.FromContext(ctx)
-	md, _ := metadata.FromIncomingContext(ctx)
-	clientName := getValue(md, "clientname")
-	serviceName := getValue(md, "servicename")
-	serviceIp, _ := GetIp()
 	m, err := handler(ctx, req)
-	if err != nil {
-		logy.Errorf("[GRPC] %s(%v)->%s(%v) | %s | err = %v",
-			clientName,
-			pr.Addr.String(),
-			serviceName,
-			serviceIp,
-			info.FullMethod,
-			err)
-	} else {
-		logy.Infof("[GRPC] %13v | %s(%v)->%s(%v) | %s ",
-			time.Now().Sub(startTime),
-			clientName,
-			pr.Addr.String(),
-			serviceName,
-			serviceIp,
-			info.FullMethod)
-	}
 	return m, err
 }
 

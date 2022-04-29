@@ -136,6 +136,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 			break
 		}
 	}
+
 	md, _ := metadata.FromOutgoingContext(ctx)
 	clientName := getValue(md, "clientname")
 	clientIp, _ := GetIp()
