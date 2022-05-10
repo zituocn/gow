@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Writer writer interface
+// Writer  interface
 type Writer interface {
 	WriteLog(time.Time, int, []byte)
 }

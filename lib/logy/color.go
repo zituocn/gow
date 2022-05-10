@@ -30,17 +30,13 @@ var (
 
 type colorWriter struct {
 	mu     *sync.Mutex
-	b      []byte
 	writer Writer
 }
 
 // WriteLog colorWrite WriteLog
 func (w *colorWriter) WriteLog(now time.Time, level int, b []byte) {
-	w.b = w.b[:0]
-	w.b = append(w.b, logColor[level]...)
-	w.b = append(w.b, b...)
-	w.b = append(w.b, endColor...)
-	w.writer.WriteLog(now, level, w.b)
+	s := logColor[level] + string(b) + endColor
+	w.writer.WriteLog(now, level, []byte(s))
 }
 
 // WithColor use colorWriter

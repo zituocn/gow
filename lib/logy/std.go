@@ -57,12 +57,12 @@ func Debug(v ...interface{}) {
 	std.Debug(getFormat(len(v)), v...)
 }
 
-// Error Error v
+// Error error v
 func Error(v ...interface{}) {
 	std.Error(getFormat(len(v)), v...)
 }
 
-// Warn Warn v
+// Warn warn v
 func Warn(v ...interface{}) {
 	std.Warn(getFormat(len(v)), v...)
 }
@@ -77,7 +77,7 @@ func Panic(v ...interface{}) {
 	std.Panic(getFormat(len(v)), v...)
 }
 
-// Notice Notice v
+// Notice notice v
 func Notice(v ...interface{}) {
 	std.Notice(getFormat(len(v)), v...)
 }
