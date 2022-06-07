@@ -42,7 +42,7 @@ func (m *UpYunSmsClient) SendVerifyCode(mobile string, templateId int64, code st
 	return
 }
 
-//send send
+//send 发送请求
 func (m *UpYunSmsClient) send(body *UpYunSmsBody) (err error) {
 	req.SetTimeout(5 * time.Second)
 	header := req.Header{

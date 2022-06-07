@@ -35,7 +35,7 @@ func (m *MessageHandler) SetMaxInFlight(val int){
 	m.maxInFlight = val
 }
 
-// Registry registry nsq topic
+// Registry register nsq topic
 func (m *MessageHandler) Registry(topic string, ch chan []byte) {
 	config := gnsq.NewConfig()
 	if m.maxInFlight > 0 {
@@ -75,5 +75,6 @@ func (m *MessageHandler) handlerMessage(message *gnsq.Message) error {
 	if !m.stop {
 		m.msgChan <- message
 	}
+	message.Finish()
 	return nil
 }
