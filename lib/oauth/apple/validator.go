@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tideland/gorest/jwt"
-	"github.com/zituocn/gow/lib/logy"
 	"net/http"
 	"net/url"
 	"strings"
@@ -145,7 +144,7 @@ func doRequest(client *http.Client, result interface{}, url string, data url.Val
 
 	defer res.Body.Close()
 
-	logy.Errorf("res code === %v   %v",res.Status,res.StatusCode)
+	//logy.Errorf("res code === %v   %v",res.Status,res.StatusCode)
 
 	return json.NewDecoder(res.Body).Decode(result)
 }
