@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tideland/gorest/jwt"
+	"github.com/zituocn/gow/lib/logy"
 	"net/http"
 	"net/url"
 	"strings"
@@ -20,6 +21,8 @@ const (
 	UserAgent string = "go-sign-with-apple"
 	// AcceptHeader is the content that we are willing to accept
 	AcceptHeader string = "application/json"
+	// RevokeURL: delete user
+	RevokeURL string = "https://appleid.apple.com/auth/revoke"
 )
 
 // ValidationClient is an interface to call the validation API
@@ -32,6 +35,7 @@ type ValidationClient interface {
 // Client implements ValidationClient
 type Client struct {
 	validationURL string
+	revokeURL     string
 	client        *http.Client
 }
 
@@ -39,6 +43,7 @@ type Client struct {
 func NewClient() *Client {
 	client := &Client{
 		validationURL: ValidationURL,
+		revokeURL:     RevokeURL,
 		client: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -91,6 +96,16 @@ func (c *Client) VerifyRefreshToken(ctx context.Context, reqBody ValidationRefre
 	return doRequest(c.client, &result, c.validationURL, data)
 }
 
+func (c *Client) RevokeUserToken(ctx context.Context, reqBody RevokeUserRequest, result interface{}) error {
+	data := url.Values{}
+	data.Set("client_id", reqBody.ClientID)
+	data.Set("client_secret", reqBody.ClientSecret)
+	data.Set("token", reqBody.Token)
+	data.Set("token_type_hint", reqBody.TokenTypeHint)
+
+	return doRequest(c.client, &result, c.revokeURL, data)
+}
+
 // GetUniqueID decodes the id_token response and returns the unique subject ID to identify the user
 func GetUniqueID(idToken string) (string, error) {
 	j, err := jwt.Decode(idToken)
@@ -129,6 +144,8 @@ func doRequest(client *http.Client, result interface{}, url string, data url.Val
 	}
 
 	defer res.Body.Close()
+
+	logy.Errorf("res code === %v   %v",res.Status,res.StatusCode)
 
 	return json.NewDecoder(res.Body).Decode(result)
 }
