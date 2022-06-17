@@ -3,15 +3,17 @@ package nsq
 import (
 	"fmt"
 	gnsq "github.com/nsqio/go-nsq"
+	"time"
 )
 
 //MessageHandler MessageHandler
 type MessageHandler struct {
-	msgChan   chan *gnsq.Message
-	stop      bool
-	nsqServer string
-	Channel   string
+	msgChan     chan *gnsq.Message
+	stop        bool
+	nsqServer   string
+	Channel     string
 	maxInFlight int
+	msgTimeout  time.Duration
 }
 
 // NewMessageHandler return new MessageHandler
@@ -31,8 +33,13 @@ func NewMessageHandler(nsqServer string, channel string) (mh *MessageHandler, er
 }
 
 // SetMaxInFlight set nsq consumer MaxInFlight
-func (m *MessageHandler) SetMaxInFlight(val int){
+func (m *MessageHandler) SetMaxInFlight(val int) {
 	m.maxInFlight = val
+}
+
+//SetMsgTimeout  set nsq consumer MsgTimeout
+func (m *MessageHandler) SetMsgTimeout(d time.Duration){
+	m.msgTimeout = d
 }
 
 // Registry register nsq topic
@@ -40,6 +47,9 @@ func (m *MessageHandler) Registry(topic string, ch chan []byte) {
 	config := gnsq.NewConfig()
 	if m.maxInFlight > 0 {
 		config.MaxInFlight = m.maxInFlight
+	}
+	if m.msgTimeout != 0{
+		config.MsgTimeout = m.msgTimeout
 	}
 	consumer, err := gnsq.NewConsumer(topic, m.Channel, config)
 	if err != nil {
