@@ -2,7 +2,7 @@ package gow
 
 const (
 	// gow version
-	version = "v1.2.1"
+	version = "v1.2.3"
 	logo    = `   ____   ______  _  __
   / ___\ /  _ \ \/ \/ /
  / /_/  >  <_> )     / 
@@ -10,11 +10,10 @@ const (
 /_____/ ` + version + "\n github.com/zituocn/gow \n"
 )
 
-
-var(
+var (
 
 	// default 404 page
-	default404Page=`
+	default404Page = `
 <!doctype html>
 <html>
 <head>

@@ -24,6 +24,6 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.1
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
-	google.golang.org/grpc v1.42.0
+	google.golang.org/grpc v1.49.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )

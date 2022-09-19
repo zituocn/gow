@@ -43,6 +43,8 @@ func InitRDSClient(rdc *RDSConfig) (err error) {
 	return
 }
 
+
+
 // ====================private====================
 
 // newRedisPools

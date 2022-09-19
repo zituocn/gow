@@ -1,5 +1,11 @@
 # redis 使用
 
+此库已弃用，不再维护建议使用：
+
+```
+github.com/zituocn/gow/lib/goredis
+```
+
 
 ## 初始化链接
 
