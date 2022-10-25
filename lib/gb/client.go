@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/resolver"
 	"time"
 )
 
@@ -76,6 +75,9 @@ func NewClient(opt *ClientOption) (*Client, error) {
 	if opt.ConnType < 1 {
 		return nil, errors.New("[RPC] need conn type")
 	}
+	if opt.ConnType == BalanceType && len(opt.EtcdEndPoint) == 0 {
+		return nil, errors.New("[RPC] need etcdEndPoint")
+	}
 	client := &Client{
 		serverAddr:   opt.ServerAddr,
 		etcdEndPoint: opt.EtcdEndPoint,
@@ -108,7 +110,7 @@ func (c *Client) newClientConn() (*grpc.ClientConn, error) {
 				c.serverAddr,
 				grpc.WithTransportCredentials(cred),
 				grpc.WithUnaryInterceptor(unaryInterceptorClient),
-				grpc.WithStreamInterceptor(streamInterceptorClient))
+			)
 			if err != nil {
 				return nil, fmt.Errorf("[RPC] get default client conn with credentials from etcd error :%s", err.Error())
 			}
@@ -118,40 +120,53 @@ func (c *Client) newClientConn() (*grpc.ClientConn, error) {
 				c.serverAddr,
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
 				grpc.WithUnaryInterceptor(unaryInterceptorClient),
-				grpc.WithStreamInterceptor(streamInterceptorClient))
+			)
 			if err != nil {
 				return nil, fmt.Errorf("[RPC] get default client conn error :%s", err.Error())
 			}
 			return conn, nil
 		}
 	case BalanceType:
-		rb := rd.NewServiceDiscovery(c.etcdEndPoint)
-		resolver.Register(rb)
+		client, err := rd.NewClientDiscovery(c.serviceName, c.etcdEndPoint)
+		defer client.Close()
+		if err != nil {
+			return nil, err
+		}
+		err = client.Build()
+		if err != nil {
+			return nil, err
+		}
+		serverAddr, err := client.GetServerAddr()
+		if err != nil {
+			return nil, err
+		}
+		if serverAddr == "" {
+			return nil, fmt.Errorf("get service address failed from  %v", c.etcdEndPoint)
+		}
+
 		if c.certFile != "" {
 			cred, err := credentials.NewClientTLSFromFile(c.certFile, c.serviceName)
 			if err != nil {
 				return nil, fmt.Errorf("[RPC] failed to validate certificate : %s", err.Error())
 			}
 			conn, err := grpc.Dial(
-				fmt.Sprintf("%s:///%s", rb.Scheme(), c.serviceName),
+				serverAddr,
 				grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
 				grpc.WithTransportCredentials(cred),
-				grpc.WithUnaryInterceptor(unaryInterceptorClient),
-				grpc.WithStreamInterceptor(streamInterceptorClient))
-
+				grpc.WithUnaryInterceptor(unaryInterceptorClient))
 			if err != nil {
 				return nil, fmt.Errorf("[RPC] get client conn with credentials from etcd  error : %s", err.Error())
 			}
 			return conn, nil
 		} else {
 			conn, err := grpc.Dial(
-				fmt.Sprintf("%s:///%s", rb.Scheme(), c.serviceName),
+				serverAddr,
 				grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
 				grpc.WithUnaryInterceptor(unaryInterceptorClient),
-				grpc.WithStreamInterceptor(streamInterceptorClient))
+			)
 			if err != nil {
-				return nil, fmt.Errorf("[RPC] get client conn from etcd error :%s", err.Error())
+				return nil, fmt.Errorf("[RPC] get client conn from etcd error: %s", err.Error())
 			}
 			return conn, nil
 		}
@@ -174,7 +189,9 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 	startTime := time.Now()
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	if err != nil {
-		logy.Errorf("[GRPC] [%s] %s -> [%s]  %s  | %s | err = %s",
+		logy.Errorf("%4s | %13v | %10s:%-10s -> %10s:%-10s | %s | %s",
+			"rpc",
+			time.Now().Sub(startTime),
 			clientName,
 			clientIp,
 			serviceName,
@@ -182,13 +199,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 			method,
 			err.Error())
 	} else {
-		logy.Infof("[GRPC] %8s | %s (%s) -> %s (%s) | %s ",
-			time.Now().Sub(startTime),
-			clientName,
-			clientIp,
-			serviceName,
-			cc.Target(),
-			method)
+		logy.Infof("%4s | %13v | %10s:%-10s -> %10s:%-10s | %s ", "rpc", time.Now().Sub(startTime), clientName, clientIp, serviceName, cc.Target(), method)
 	}
 	return err
 }
@@ -200,43 +211,6 @@ func getValue(md metadata.MD, key string) string {
 		}
 	}
 	return ""
-}
-
-// wrappedStreamClient
-type wrappedStreamClient struct {
-	grpc.ClientStream
-}
-
-// RecvMsg  receive message
-//	returns error
-func (w *wrappedStreamClient) RecvMsg(m interface{}) error {
-	return w.ClientStream.RecvMsg(m)
-}
-
-// SendMsg send message
-//	returns error
-func (w *wrappedStreamClient) SendMsg(m interface{}) error {
-	return w.ClientStream.SendMsg(m)
-}
-
-// newWrappedStreamClient
-func newWrappedStreamClient(s grpc.ClientStream) grpc.ClientStream {
-	return &wrappedStreamClient{s}
-}
-
-// streamInterceptorClient is an example stream interceptor.
-func streamInterceptorClient(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-	for _, o := range opts {
-		_, ok := o.(*grpc.PerRPCCredsCallOption)
-		if ok {
-			break
-		}
-	}
-	s, err := streamer(ctx, desc, cc, method, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return newWrappedStreamClient(s), nil
 }
 
 // setCtx set context

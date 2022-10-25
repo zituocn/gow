@@ -34,7 +34,6 @@ type AliClient struct {
 }
 
 // NewAliClient return new client
-//
 func NewAliClient(accessKeyId, secret, endPoint, bucketName, serverUrl string) *AliClient {
 	// 末尾添加 /
 	if len(serverUrl) > 0 && serverUrl[len(serverUrl)-1:] != "/" {

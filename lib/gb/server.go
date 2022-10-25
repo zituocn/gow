@@ -1,8 +1,3 @@
-/*
-sam
-2022-09-18
-*/
-
 package gb
 
 import (
@@ -57,7 +52,6 @@ func NewServer(opt *ServerOption) (*Server, error) {
 		cred, err := credentials.NewServerTLSFromFile(opt.CertFile, opt.KeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("[RPC] load cred file error : %s", err.Error())
-
 		}
 		g = grpc.NewServer(grpc.Creds(cred))
 	} else {
@@ -85,7 +79,6 @@ func (s *Server) Run() {
 			logy.Errorf("[RPC] failed to listen: %s", err.Error())
 		}
 	}()
-
 	go func() {
 		if s.isRegister {
 			logy.Info("[RPC] start service registration ...")

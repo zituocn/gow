@@ -2,55 +2,56 @@ package rd
 
 import (
 	"context"
-	"sync"
-	"time"
-
+	"fmt"
 	"github.com/zituocn/gow/lib/logy"
-
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/resolver"
+	"math/rand"
+	"net"
+	"sync"
+	"time"
 )
 
-// ServiceDiscovery implement the Builder interface
+var (
+	timeOut = 3
+)
+
 type ServiceDiscovery struct {
-	cli        *clientv3.Client
-	cc         resolver.ClientConn
-	serverList sync.Map
-	prefix     string
+	cli          *clientv3.Client
+	etcdEndPoint []string
+	serverList   sync.Map
+	serviceName  string
+	prefix       string
 }
 
-// NewServiceDiscovery returns a new resolver.Builder
-func NewServiceDiscovery(endpoints []string) resolver.Builder {
+func NewClientDiscovery(serviceName string, endpoints []string) (*ServiceDiscovery, error) {
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   endpoints,
-		DialTimeout: 10 * time.Second,
+		DialTimeout: time.Duration(timeOut) * time.Second,
 	})
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	return &ServiceDiscovery{
-		cli: cli,
-	}
+		cli:          cli,
+		serviceName:  serviceName,
+		etcdEndPoint: endpoints,
+	}, nil
 }
 
-func (s *ServiceDiscovery) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
-	s.cc = cc
-	s.prefix = "/" + target.URL.Scheme + target.URL.Path + "/"
+func (s *ServiceDiscovery) Build() error {
+	s.prefix = "/" + schema + "/" + s.serviceName + "/"
 	resp, err := s.cli.Get(context.Background(), s.prefix, clientv3.WithPrefix())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, ev := range resp.Kvs {
 		s.SetServiceList(string(ev.Key), string(ev.Value))
 	}
-	_ = s.cc.UpdateState(resolver.State{Addresses: s.getServices()})
 	go s.watcher()
-	return s, nil
-}
 
-func (s *ServiceDiscovery) SetServiceList(key, val string) {
-	s.serverList.Store(key, resolver.Address{Addr: val})
-	_ = s.cc.UpdateState(resolver.State{Addresses: s.getServices()})
+	return nil
 }
 
 func (s *ServiceDiscovery) watcher() {
@@ -58,31 +59,27 @@ func (s *ServiceDiscovery) watcher() {
 	for wResp := range rch {
 		for _, ev := range wResp.Events {
 			switch ev.Type {
-			case 0: //PUT
+			case mvccpb.PUT: //PUT
 				s.SetServiceList(string(ev.Kv.Key), string(ev.Kv.Value))
-			case 1: //DELETE
+			case mvccpb.DELETE: //DELETE
 				s.DelServiceList(string(ev.Kv.Key))
 			}
 		}
 	}
 }
 
-func (s *ServiceDiscovery) ResolveNow(rn resolver.ResolveNowOptions) {
-	logy.Debug("ResolveNow")
-}
-
-// Scheme return schema
-func (s *ServiceDiscovery) Scheme() string {
-	return schema
-}
-
 // Close 关闭
 func (s *ServiceDiscovery) Close() {
-	_ = s.cli.Close()
+	if s.cli != nil {
+		err := s.cli.Close()
+		if err != nil {
+			logy.Errorf("close etcd error :%v", err)
+		}
+	}
 }
 
 func (s *ServiceDiscovery) getServices() []resolver.Address {
-	addrs := make([]resolver.Address, 0, 10)
+	addrs := make([]resolver.Address, 0)
 	s.serverList.Range(func(k, v interface{}) bool {
 		addrs = append(addrs, v.(resolver.Address))
 		return true
@@ -92,5 +89,67 @@ func (s *ServiceDiscovery) getServices() []resolver.Address {
 
 func (s *ServiceDiscovery) DelServiceList(key string) {
 	s.serverList.Delete(key)
-	_ = s.cc.UpdateState(resolver.State{Addresses: s.getServices()})
+}
+
+func (s *ServiceDiscovery) SetServiceList(key, val string) {
+	s.serverList.Store(key, resolver.Address{Addr: val})
+}
+
+var (
+	rd = rand.New(rand.NewSource(time.Now().UnixNano()))
+)
+
+// GetServerAddr return grpc server ip
+func (s *ServiceDiscovery) GetServerAddr() (string, error) {
+	addrs := s.getServices()
+	if len(addrs) == 0 {
+		return "", fmt.Errorf("service address not found from %v", s.etcdEndPoint)
+	}
+	rr := new(RoundRobin)
+	rr.Clear()
+	for _, item := range addrs {
+		rr.Add(item.Addr)
+	}
+	rr.length = len(rr.ss)
+	addr := rr.Pick()
+	return addr, nil
+}
+
+/*
+RoundRobin
+*/
+
+type RoundRobin struct {
+	ss     []string
+	next   int
+	length int
+}
+
+func (r *RoundRobin) Clear() {
+	r.ss = r.ss[:0]
+}
+
+func (r *RoundRobin) Add(s string) {
+	if s != "" {
+		r.ss = append(r.ss, s)
+	}
+}
+
+func (r *RoundRobin) Pick() string {
+	if r.length == 0 {
+		return ""
+	}
+	index := rd.Intn(r.length)
+	return r.ss[index]
+}
+
+// tcpHealth simple grpc health check
+func tcpHealth(addr string) bool {
+	conn, err := net.DialTimeout("tcp", addr, 1*time.Second)
+	if err != nil || conn == nil {
+		return false
+	} else {
+		_ = conn.Close()
+		return true
+	}
 }

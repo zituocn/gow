@@ -14,6 +14,11 @@ go get github.com/zituocn/gow/lib/gb
 * 可使用普通的 grpc server 与 client；
 * 可实现 grpc 的负载均衡，需要配合 etcd 使用；
 
+### demo
+
+```
+https://github.com/zituocn/gb_demo
+```
 
 ### 服务端使用方法
 

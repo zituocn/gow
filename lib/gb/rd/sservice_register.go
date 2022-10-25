@@ -3,6 +3,9 @@ package rd
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -41,13 +44,12 @@ func NewServiceRegister(opt *ServiceOption) (*ServiceRegister, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// check etcd timeout
 	timeOutCtx, cancel := context.WithTimeout(context.Background(), opt.DialTimeout*time.Second/2)
 	defer cancel()
 	_, err = cli.Status(timeOutCtx, opt.Endpoints[0])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[ETCD] connection timed out %s", err.Error())
 	}
 	addr, err := GetLocalIP()
 	if err != nil {
@@ -62,7 +64,33 @@ func NewServiceRegister(opt *ServiceOption) (*ServiceRegister, error) {
 	if err1 := svc.putKeyWithLease(opt.Lease); err1 != nil {
 		return nil, err1
 	}
+
+	svc.listenExit()
+
 	return svc, nil
+}
+
+func (s *ServiceRegister) listenExit() {
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
+	go func() {
+		c := <-ch
+		// 接收到进程退出信号量,解除租约
+		s.unRegister()
+		if i, ok := c.(syscall.Signal); ok {
+			os.Exit(int(i))
+		} else {
+			os.Exit(0)
+		}
+	}()
+}
+
+func (s *ServiceRegister) unRegister() {
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	_, err := s.cli.Delete(ctx, s.key)
+	if err != nil {
+		return
+	}
 }
 
 func (s *ServiceRegister) putKeyWithLease(lease int64) error {
