@@ -34,6 +34,7 @@ var (
 )
 
 // HandlerFunc gow handler
+//
 //	func(ctx *Context)
 type HandlerFunc func(ctx *Context)
 
@@ -87,6 +88,7 @@ type Engine struct {
 }
 
 // New returns a new blank Engine instance without any middleware attached.
+//
 //	gzipOn false
 //	sessionOn false
 //	ignoreCase true
@@ -308,6 +310,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 }
 
 // Use middleware
+//
 //	ex: r.Use(Auth())
 func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
@@ -332,9 +335,10 @@ func (engine *Engine) rebuild405Handlers() {
 
 // RouteMapInfo route map info
 type RouteMapInfo struct {
-	Method  string
-	Path    string
-	Handler string
+	Method   string
+	Path     string
+	Handler  string
+	Handlers HandlersChain
 }
 
 // PrintRouteMap print route map
@@ -351,9 +355,10 @@ func (engine *Engine) RouteMap() []*RouteMapInfo {
 	for _, t := range engine.trees {
 		for _, r := range t.routes {
 			rm = append(rm, &RouteMapInfo{
-				Method:  t.method,
-				Path:    r.path,
-				Handler: nameOfFunction(r.handlers[len(r.handlers)-1]),
+				Method:   t.method,
+				Path:     r.path,
+				Handler:  nameOfFunction(r.handlers[len(r.handlers)-1]),
+				Handlers: r.handlers,
 			})
 		}
 	}
