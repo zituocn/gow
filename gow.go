@@ -341,7 +341,7 @@ type RouteMapInfo struct {
 func (engine *Engine) PrintRouteMap() {
 	routeMap := engine.RouteMap()
 	for _, item := range routeMap {
-		fmt.Printf(" %6s  %20s %5s %s \n", item.Method, item.Path, " ", item.Handler)
+		fmt.Printf(" %8s  %-35s %5s %s \n", item.Method, item.Path, " ", item.Handler)
 	}
 }
 
