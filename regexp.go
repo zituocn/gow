@@ -105,7 +105,7 @@ func addRouteRegexp(path string, rc *routeConfig) (*routeRegexp, error) {
 		}
 		// Name or pattern can't be empty.
 		if name == "" || patt == "" {
-			return nil, fmt.Errorf("mux: missing name or pattern in %q", path[idxs[i]:end])
+			return nil, fmt.Errorf("gow: missing name or pattern in %q", path[idxs[i]:end])
 		}
 		// Build the regexp pattern.
 		fmt.Fprintf(pattern, "%s(%s)", regexp.QuoteMeta(raw), patt)
@@ -154,12 +154,12 @@ func braceIndices(s string) ([]int, error) {
 			if level--; level == 0 {
 				idxs = append(idxs, idx, i+1)
 			} else if level < 0 {
-				return nil, fmt.Errorf("mux: unbalanced braces in %q", s)
+				return nil, fmt.Errorf("gow: unbalanced braces in %q", s)
 			}
 		}
 	}
 	if level != 0 {
-		return nil, fmt.Errorf("mux: unbalanced braces in %q", s)
+		return nil, fmt.Errorf("gow: unbalanced braces in %q", s)
 	}
 	return idxs, nil
 }

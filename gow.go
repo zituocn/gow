@@ -9,14 +9,15 @@ package gow
 
 import (
 	"fmt"
-	"github.com/zituocn/gow/lib/logy"
-	"github.com/zituocn/gow/render"
 	"html/template"
 	"net"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/gow/render"
 )
 
 const (
@@ -148,6 +149,11 @@ func (engine *Engine) SetAppConfig(app *AppConfig) {
 		engine.gzipOn = app.GzipOn
 		engine.ignoreCase = app.IgnoreCase
 	}
+}
+
+// ResetRoute clear engine's route
+func (engine *Engine) ResetRoute() {
+	engine.trees = make([]methodTree, 0, 9)
 }
 
 // AddFuncMap add fn func to template func map
@@ -310,7 +316,6 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 }
 
 // Use middleware
-//
 //	ex: r.Use(Auth())
 func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
@@ -345,7 +350,7 @@ type RouteMapInfo struct {
 func (engine *Engine) PrintRouteMap() {
 	routeMap := engine.RouteMap()
 	for _, item := range routeMap {
-		fmt.Printf(" %8s  %-35s %5s %s \n", item.Method, item.Path, " ", item.Handler)
+		fmt.Printf(" %8s  %-30s %5s %s \n", item.Method, item.Path, " ", item.Handler)
 	}
 }
 

@@ -54,7 +54,7 @@ func (tree methodTree) addRoute(path string, handlers HandlersChain, rc *routeCo
 		path:     path,
 		handlers: handlers,
 	}
-	route.addRegexpMatcher(path, rc)
+	_ = route.addRegexpMatcher(path, rc)
 	tree.routes = append(tree.routes, route)
 	return tree.routes
 }
@@ -67,7 +67,7 @@ type Route struct {
 }
 
 // Match implements interface
-//	route math
+//	route match
 //	search route path in r.matchers
 func (r *Route) Match(path string, match *matchValue) bool {
 	for _, m := range r.matchers {

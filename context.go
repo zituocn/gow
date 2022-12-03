@@ -2,7 +2,7 @@
 gow context
 sam
 2021-01-14
- */
+*/
 
 package gow
 
@@ -83,6 +83,11 @@ func (c *Context) reset() {
 	c.Data = make(map[interface{}]interface{}, 0)
 	c.Pager = nil
 	*c.params = (*c.params)[0:0]
+}
+
+// GetEngine returns *engine
+func (c *Context) GetEngine() *Engine {
+	return c.engine
 }
 
 // Handler returns the main handler.
