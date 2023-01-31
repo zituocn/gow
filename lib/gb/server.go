@@ -1,67 +1,66 @@
+/*
+server.go
+
+grpc server 封装
+sam
+2023-01-30
+
+*/
+
 package gb
 
 import (
 	"errors"
 	"fmt"
-	"github.com/zituocn/gow/lib/gb/rd"
 	"github.com/zituocn/gow/lib/logy"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"net"
 )
 
-// Server GRPC server struct
-type Server struct {
+var (
+	grpcScheme = "grpc"
+)
+
+type GrpcServer struct {
 	Listener net.Listener
-	Server   *grpc.Server
 
-	// grpc service name
-	Name string
+	Server *grpc.Server
 
-	// grpc service port
+	ServerName string
+
 	port int
 
-	// etcd endpoints
-	etcdEndPoints []string
+	etcdEndpoints []string
 
-	// etcd lease
-	lease      int64
+	lease int64
+
 	isRegister bool
 }
 
-// NewServer returns server
-//	server,err:=gb.NewServer(opt)
-//	server.Run()
-func NewServer(opt *ServerOption) (*Server, error) {
+// NewGrpcServer 返回新的grpc register
+func NewGrpcServer(opt *GrpcServerOption) (*GrpcServer, error) {
 	if opt.Port == 0 {
-		return nil, fmt.Errorf("[RPC] init failed: need port")
+		return nil, errors.New("[grpc] need port")
+	}
+	if opt.IsRegister && len(opt.EtcdEndpoints) == 0 {
+		return nil, errors.New("[grpc] need etcd endpoint")
+	}
+	if !opt.IsRegister && opt.IP == "" {
+		return nil, errors.New("[grpc] need ip address")
+	}
+	if opt.Lease < 1 {
+		opt.Lease = 3
 	}
 	listener, err := net.Listen("tcp", opt.address())
 	if err != nil {
 		return nil, err
 	}
-	if opt.IsRegister && len(opt.EtcdEndPoints) == 0 {
-		return nil, errors.New("[RPC] service register need etcd endpoint")
-
-	}
-	if opt.Lease < 1 {
-		opt.Lease = 3
-	}
-	var g *grpc.Server
-	if opt.KeyFile != "" && opt.CertFile != "" {
-		cred, err := credentials.NewServerTLSFromFile(opt.CertFile, opt.KeyFile)
-		if err != nil {
-			return nil, fmt.Errorf("[RPC] load cred file error : %s", err.Error())
-		}
-		g = grpc.NewServer(grpc.Creds(cred))
-	} else {
-		g = grpc.NewServer()
-	}
-	server := &Server{
+	g := grpc.NewServer()
+	server := &GrpcServer{
 		Listener:      listener,
 		Server:        g,
-		Name:          opt.Name,
-		etcdEndPoints: opt.EtcdEndPoints,
+		ServerName:    opt.ServerName,
+		etcdEndpoints: opt.EtcdEndpoints,
 		port:          opt.Port,
 		lease:         opt.Lease,
 		isRegister:    opt.IsRegister,
@@ -69,62 +68,64 @@ func NewServer(opt *ServerOption) (*Server, error) {
 	return server, nil
 }
 
-// Run start grpc server
-//	start service and complete service registration
-func (s *Server) Run() {
+// Run 运行
+func (s *GrpcServer) Run() {
 	go func() {
-		logy.Infof("[RPC] [%s] start grpc service listen on :%d", s.Name, s.port)
+		logy.Infof("[grpc] [%s] start grpc service listen on :%d", s.ServerName, s.port)
 		err := s.Server.Serve(s.Listener)
 		if err != nil {
-			logy.Errorf("[RPC] failed to listen: %s", err.Error())
+			logy.Errorf("[grpc] failed to listen: %s", err.Error())
 		}
 	}()
 	go func() {
 		if s.isRegister {
-			logy.Info("[RPC] start service registration ...")
-			_, err := rd.NewServiceRegister(&rd.ServiceOption{
-				Endpoints: s.etcdEndPoints,
-				Lease:     s.lease,
-				Prefix:    s.Name,
-				Port:      s.port,
-			})
+			logy.Info("[grpc] start registration ...")
+			addr, err := GetLocalIP()
 			if err != nil {
-				logy.Errorf("[RPC] service register failed : %s", err.Error())
+				logy.Errorf("[grpc] get location ip error : %s", err.Error())
 				return
 			}
-			logy.Info("[RPC] service registration succeeded")
+			val := fmt.Sprintf("%s:%d", addr, s.port)
+			_, err = NewRegister(&RegisterOption{
+				EtcdEndpoints: s.etcdEndpoints,
+				Schema:        grpcScheme,
+				Lease:         s.lease,
+				Key:           s.ServerName,
+				Val:           val,
+			})
+			if err != nil {
+				logy.Errorf("[grpc] register failed: %s", err.Error())
+				return
+			}
+			logy.Info("[grpc] service registered successfully")
 		}
 	}()
+
 }
 
-// ServerOption grpc option
-type ServerOption struct {
-	// * grpc service name
-	Name string
+// GrpcServerOption grpc register 参数
+type GrpcServerOption struct {
 
-	// * grpc service port
+	// grpc ServerName 服务名
+	ServerName string
+
+	// 端口
 	Port int
 
-	// grpc service IP address
+	// IP地址
 	IP string
 
-	// etcd endpoints
-	EtcdEndPoints []string
+	// EtcdEndpoints  etcd地址，如果为多个地址时，需要集群部署etcd
+	EtcdEndpoints []string
 
-	// etcd lease
+	// Lease etcd 租约续期时间
 	Lease int64
 
-	//  whether registration service is required
+	// IsRegister 是否注册到etcd
+	//	为true时，可不填写传入ip地址
 	IsRegister bool
-
-	// crt or pem file
-	CertFile string
-
-	// private key file
-	KeyFile string
 }
 
-// Address returns ip:port string
-func (o *ServerOption) address() string {
+func (o *GrpcServerOption) address() string {
 	return fmt.Sprintf("%s:%d", o.IP, o.Port)
 }

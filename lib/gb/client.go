@@ -1,6 +1,10 @@
 /*
+client.go
+
+grpc client 封装
 sam
-2022-09-18
+2023-01-30
+
 */
 
 package gb
@@ -9,170 +13,116 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/zituocn/gow/lib/gb/rd"
 	"github.com/zituocn/gow/lib/logy"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/resolver"
 	"time"
 )
 
-// ConnType grpc conn type
 type ConnType uint
 
 const (
 
-	// DefaultType get default client conn
+	// DefaultType 传统模式的grpc连接方式
 	DefaultType ConnType = iota + 1
 
-	// BalanceType  get client conn from etcd
-	//	need etcdEndPoint
+	// BalanceType 负载均衡的grpc连接方式
+	//	需要使用etcd做为服务注册与发现
 	BalanceType
 )
 
-type Client struct {
-	serverAddr   string
-	etcdEndPoint []string
+type GrpcClientOption struct {
 
-	serviceName string
-	clientName  string
-
-	certFile string
-
-	connType ConnType
-}
-
-type ClientOption struct {
-	// grpc server addr host:port *
+	// SererAddr grpc服务的地址
 	ServerAddr string
 
-	// etcd endpoint
-	EtcdEndPoint []string
+	// EtcdEndpoint etcd地址
+	EtcdEndpoint []string
 
-	// grpc server name *
-	ServiceName string
+	// ServerName 服务名
+	ServerName string
 
-	// * grpc client name
+	// ClientName 客户端名称
 	ClientName string
 
-	// cert file if you need
-	CertFile string
-
-	// returns conn type
+	// ConnType 连接类型
 	ConnType ConnType
 }
 
-// NewClient returns  new client and error
-func NewClient(opt *ClientOption) (*Client, error) {
-	if opt.ServiceName == "" {
-		return nil, errors.New("[RPC] need ServiceName")
+type GrpcClient struct {
+	serverAddr   string
+	etcdEndpoint []string
+	serverName   string
+	clientName   string
+	connType     ConnType
+}
+
+func NewGrpcClient(opt *GrpcClientOption) (*GrpcClient, error) {
+	if opt.ServerName == "" {
+		return nil, errors.New("[grpc] need register name")
 	}
-	if opt.ServerAddr == "" {
-		return nil, errors.New("[RPC] need ServerAddr")
+	if opt.ClientName == "" {
+		return nil, errors.New("[grpc] need discovery name")
 	}
-	if opt.ConnType < 1 {
-		return nil, errors.New("[RPC] need conn type")
+	if opt.ConnType == DefaultType && opt.ServerAddr == "" {
+		return nil, errors.New("[grpc] if conn type is DefaultType, need ServerAddr")
+
 	}
-	if opt.ConnType == BalanceType && len(opt.EtcdEndPoint) == 0 {
-		return nil, errors.New("[RPC] need etcdEndPoint")
+	if opt.ConnType == BalanceType && len(opt.EtcdEndpoint) == 0 {
+		return nil, errors.New("[grpc] if conn type is BalanceType, need etcd endpoint")
 	}
-	client := &Client{
+
+	client := &GrpcClient{
 		serverAddr:   opt.ServerAddr,
-		etcdEndPoint: opt.EtcdEndPoint,
+		etcdEndpoint: opt.EtcdEndpoint,
 		clientName:   opt.ClientName,
-		serviceName:  opt.ServiceName,
-		certFile:     opt.CertFile,
+		serverName:   opt.ServerName,
 		connType:     opt.ConnType,
 	}
 	return client, nil
 }
 
-// GetConn get the client conn
-//	returns conn and error
-func (c *Client) GetConn() (*grpc.ClientConn, context.Context, error) {
+// GetConn returns grpc clientConn,ctx and error
+func (c *GrpcClient) GetConn() (*grpc.ClientConn, context.Context, error) {
 	conn, err := c.newClientConn()
-	ctx := setCtx(c.serviceName, c.clientName, conn)
+	ctx := setCtx(c.serverName, c.clientName, conn)
 	return conn, ctx, err
 }
 
-func (c *Client) newClientConn() (*grpc.ClientConn, error) {
+func (c *GrpcClient) newClientConn() (conn *grpc.ClientConn, err error) {
 	switch c.connType {
 	case DefaultType:
-		if c.certFile != "" {
-			// use credential
-			cred, err := credentials.NewClientTLSFromFile(c.certFile, c.serviceName)
-			if err != nil {
-				return nil, fmt.Errorf("[RPC] failed to validate certificate :%s", err.Error())
-			}
-			conn, err := grpc.Dial(
-				c.serverAddr,
-				grpc.WithTransportCredentials(cred),
-				grpc.WithUnaryInterceptor(unaryInterceptorClient),
-			)
-			if err != nil {
-				return nil, fmt.Errorf("[RPC] get default client conn with credentials from etcd error :%s", err.Error())
-			}
-			return conn, nil
-		} else {
-			conn, err := grpc.Dial(
-				c.serverAddr,
-				grpc.WithTransportCredentials(insecure.NewCredentials()),
-				grpc.WithUnaryInterceptor(unaryInterceptorClient),
-			)
-			if err != nil {
-				return nil, fmt.Errorf("[RPC] get default client conn error :%s", err.Error())
-			}
-			return conn, nil
+		conn, err = grpc.Dial(
+			c.serverAddr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(unaryInterceptorClient),
+		)
+		if err != nil {
+			return nil, err
 		}
 	case BalanceType:
-		client, err := rd.NewClientDiscovery(c.serviceName, c.etcdEndPoint)
-		defer client.Close()
+		key := "/" + grpcScheme + "/" + c.serverName
+		rd, err := NewDiscovery(grpcScheme, key, c.etcdEndpoint, 5)
 		if err != nil {
 			return nil, err
 		}
-		err = client.Build()
+		resolver.Register(rd)
+		conn, err = grpc.Dial(
+			fmt.Sprintf("%s:///%s", rd.Scheme(), c.serverName),
+			grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
 		if err != nil {
 			return nil, err
-		}
-		serverAddr, err := client.GetServerAddr()
-		if err != nil {
-			return nil, err
-		}
-		if serverAddr == "" {
-			return nil, fmt.Errorf("get service address failed from  %v", c.etcdEndPoint)
-		}
-
-		if c.certFile != "" {
-			cred, err := credentials.NewClientTLSFromFile(c.certFile, c.serviceName)
-			if err != nil {
-				return nil, fmt.Errorf("[RPC] failed to validate certificate : %s", err.Error())
-			}
-			conn, err := grpc.Dial(
-				serverAddr,
-				grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
-				grpc.WithTransportCredentials(cred),
-				grpc.WithUnaryInterceptor(unaryInterceptorClient))
-			if err != nil {
-				return nil, fmt.Errorf("[RPC] get client conn with credentials from etcd  error : %s", err.Error())
-			}
-			return conn, nil
-		} else {
-			conn, err := grpc.Dial(
-				serverAddr,
-				grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
-				grpc.WithTransportCredentials(insecure.NewCredentials()),
-				grpc.WithUnaryInterceptor(unaryInterceptorClient),
-			)
-			if err != nil {
-				return nil, fmt.Errorf("[RPC] get client conn from etcd error: %s", err.Error())
-			}
-			return conn, nil
 		}
 	default:
-		return nil, fmt.Errorf("unknown conn Type")
+		err = errors.New("unknown conn type")
+		return nil, err
 	}
+	return
 }
 
 func unaryInterceptorClient(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
@@ -184,7 +134,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 	}
 	md, _ := metadata.FromOutgoingContext(ctx)
 	clientName := getValue(md, "clientname")
-	clientIp, _ := rd.GetLocalIP()
+	clientIp, _ := GetLocalIP()
 	serviceName := getValue(md, "servicename")
 	startTime := time.Now()
 	err := invoker(ctx, method, req, reply, cc, opts...)

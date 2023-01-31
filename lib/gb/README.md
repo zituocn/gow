@@ -1,79 +1,111 @@
 # gb
 
-grpc的封装库
+基于etcd的注册与发现
 
 
-### 安装
+### 注册
 
-```sh
-go get github.com/zituocn/gow/lib/gb
+```go
+package main
+
+import (
+	"flag"
+	"github.com/zituocn/srd"
+	"log"
+)
+
+func main() {
+	flag.Parse()
+	_, err := srd.NewRegister(&srd.RegisterOption{
+		EtcdEndpoints: []string{"192.168.0.101:2379"},
+		Lease:         3,
+		Schema:        "gk100-cache",
+		Key:           "pod-ip",
+		Val:           "10.10.10.2:10003",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	select {}
+}
+
 ```
 
-### 特性
+### 发现
 
-* 可使用普通的 grpc server 与 client；
-* 可实现 grpc 的负载均衡，需要配合 etcd 使用；
+```go
+package main
 
-### demo
+import (
+	"fmt"
+	"github.com/zituocn/srd"
+	"log"
+)
+
+func main() {
+	dis, err := srd.NewDiscovery("gk100-cache", "pod-ip", []string{"192.168.0.101:2379"}, 3)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = dis.Builder()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(dis.GetValues())
+}
 
 ```
-https://github.com/zituocn/gb_demo
-```
 
-### 服务端使用方法
+
+### GRPC服务端
 
 ```go
 package main
 
 import (
 	"context"
-	"fmt"
+	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/srd"
+	"github.com/zituocn/srd/demo/pb"
 	"log"
-
-	"github.com/zituocn/gb_demo/pb"
-	"github.com/zituocn/gow/lib/gb"
 )
 
 var (
-	etcdEndPoints = []string{"127.0.0.1:2379"}
-	ServiceName   = "grpc-demo"
-	Port          = 3333
+	etcdEndPoints = []string{"192.168.0.101:2379"}
+	ServerName    = "user-service"
+	Port          = 1111
 )
 
 func init() {
-	initGrpc()
+	gs, err := srd.NewGrpcServer(&srd.GrpcServerOption{
+		ServerName:    ServerName,    //服务名
+		Port:          Port,          //端口
+		EtcdEndpoints: etcdEndPoints, //etcd连接配置
+		Lease:         5,             //etcd lease时间
+		IsRegister:    true,          //是否注册到etcd
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pb.RegisterUserServer(gs.Server, &UserService{})
+
+	gs.Run()
 }
 
 func main() {
 	select {}
 }
 
-func initGrpc() {
-	s, err := gb.NewServer(&gb.ServerOption{
-		Name:          ServiceName,   //服务名
-		Port:          Port,          //端口
-		EtcdEndPoints: etcdEndPoints, //etcd连接配置
-		Lease:         3,             //etcd lease时间
-		IsRegister:    true,          //是否注册到etcd
-		KeyFile:       "",            //私钥
-		CertFile:      "",            //公钥
-	})
-
-	if err != nil {
-		log.Fatalf("get grpc server error :%s", err.Error())
-	}
-	pb.RegisterUserServer(s.Server, &UserService{})
-	s.Run()
-}
-
 type UserService struct {
 }
 
 func (s *UserService) GetUser(ctx context.Context, req *pb.UserRequest) (*pb.UserResponse, error) {
-	fmt.Println(fmt.Sprintf("from %d", req.Uid))
+	logy.Debugf("from %d", req.Uid)
 	return &pb.UserResponse{
 		Uid:      req.Uid,
-		Username: "username",
+		Username: "zituocn",
 		Phone:    "13888889999",
 		Address:  "chengdu in china",
 	}, nil
@@ -81,65 +113,60 @@ func (s *UserService) GetUser(ctx context.Context, req *pb.UserRequest) (*pb.Use
 
 ```
 
-### 客户端代码
+### GRPC客户端
 
 ```go
 package main
 
 import (
-	"fmt"
+	"github.com/zituocn/gow"
+	"github.com/zituocn/srd"
+	"github.com/zituocn/srd/demo/pb"
 	"log"
-	"time"
-
-	"github.com/zituocn/gb_demo/pb"
-	"github.com/zituocn/gow/lib/gb"
 )
 
 var (
 	etcdEndPoints = []string{"127.0.0.1:2379"}
-	ServiceName   = "grpc-demo"
-	ServerAddr    = "127.0.0.1:1111"
+	serverName    = "user-service"
 )
 
 func main() {
-	
-	// ConnType 可以为 
-	//  gb.BalanceType 负载均衡方式，可以不指定服务器地址
-	//  gb.DefaultType 非负载均衡方式，需要指定服务端的连接地址
-	client, err := gb.NewClient(&gb.ClientOption{
-		ServerAddr:   ServerAddr,     //服务器地址 host:port
-		ServiceName:  ServiceName,    //服务名
-		ClientName:   "demo-test",    //客户端名称
-		EtcdEndPoint: etcdEndPoints,  //etcd节点
-		ConnType:     gb.BalanceType, //连接类型
-		CertFile:     "",             //公钥
+	r := gow.Default()
+	r.GET("/user/{id}", GetUser)
+	r.Run()
+}
+
+func GetUser(c *gow.Context) {
+	id, _ := c.ParamInt("id")
+	client, err := srd.NewGrpcClient(&srd.GrpcClientOption{
+		ServerName:   serverName,
+		EtcdEndpoint: etcdEndPoints,
+		ClientName:   "test",
+		ConnType:     srd.BalanceType,
 	})
+
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatal(err)
 	}
 
 	conn, ctx, err := client.GetConn()
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatal(err)
 	}
 	defer conn.Close()
 
-	// grpc调用
 	userClient := pb.NewUserClient(conn)
-	for i := 0; i < 10000; i++ {
-		req := &pb.UserRequest{
-			Uid: int32(i),
-		}
-		resp, err := userClient.GetUser(ctx, req)
-		if err != nil {
-			log.Printf("Call grpc error: %v \n", err)
-		}
-		fmt.Println(resp)
-		time.Sleep(1 * time.Second)
-	}
 
-	if err != nil {
-		log.Fatalf("net connect  error :%v", err)
+	req := &pb.UserRequest{
+		Uid: int32(id),
 	}
+	resp, err := userClient.GetUser(ctx, req)
+	if err != nil {
+		c.DataJSON(1, err.Error())
+		return
+	}
+	c.DataJSON(resp)
 }
+
+
 ```
