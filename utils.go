@@ -109,13 +109,13 @@ func (engine *Engine) getAddress(args ...interface{}) string {
 
 // getHostAndPort split like 127.0.0.1:8080
 func getHostAndPort(addr string) (host string, port int) {
-	addrs := strings.Split(addr, ":")
-	if len(addrs) == 1 {
+	address := strings.Split(addr, ":")
+	if len(address) == 1 {
 		host = ""
-		port, _ = strconv.Atoi(addrs[0])
-	} else if len(addrs) >= 2 {
-		host = addrs[0]
-		port, _ = strconv.Atoi(addrs[1])
+		port, _ = strconv.Atoi(address[0])
+	} else if len(address) >= 2 {
+		host = address[0]
+		port, _ = strconv.Atoi(address[1])
 	}
 	return
 }

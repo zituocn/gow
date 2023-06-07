@@ -10,7 +10,6 @@ package gow
 import (
 	"net/http"
 	"path"
-	"regexp"
 	"strings"
 )
 
@@ -23,7 +22,6 @@ var (
 		"PATCH":   true,
 		"OPTIONS": true,
 		"HEAD":    true,
-		"Any":     true,
 	}
 )
 
@@ -69,6 +67,8 @@ func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
 }
 
 // Group create a new route group.
+//	v1:=r.Group("/v1")
+//	v1.GET("/user",...)
 func (group *RouterGroup) Group(path string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
 		Handlers: group.combineHandlers(handlers),
@@ -78,50 +78,56 @@ func (group *RouterGroup) Group(path string, handlers ...HandlerFunc) *RouterGro
 }
 
 // Handle registers a new request handle and middleware with the given path and method
-func (group *RouterGroup) Handle(httpMethod, path string, handlers ...HandlerFunc) IRoutes {
-	if matches, err := regexp.MatchString("^[A-Z]+$", httpMethod); !matches || err != nil {
-		panic("http method " + httpMethod + " is not valid")
+//	r.Handle("GET","/",handler)
+//	r.Handler("GET,POST","/",handler)
+func (group *RouterGroup) Handle(method, path string, handlers ...HandlerFunc) IRoutes {
+	methods := strings.Split(method, ",")
+	for _, m := range methods {
+		group.handle(m, path, handlers)
 	}
-	if ok := httpMethods[httpMethod]; !ok {
-		panic("http method " + httpMethod + " not supported")
-	}
-
-	return group.handle(httpMethod, path, handlers)
-}
-
-// POST register POST handler
-func (group *RouterGroup) POST(path string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodPost, path, handlers)
+	return group.returnObj()
 }
 
 // GET register GET handler
 func (group *RouterGroup) GET(path string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodGet, path, handlers)
+	group.handle(http.MethodGet, path, handlers)
+	return group.returnObj()
+}
+
+// POST register POST handler
+func (group *RouterGroup) POST(path string, handlers ...HandlerFunc) IRoutes {
+	group.handle(http.MethodPost, path, handlers)
+	return group.returnObj()
 }
 
 // DELETE register DELETE handler
 func (group *RouterGroup) DELETE(path string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodDelete, path, handlers)
+	group.handle(http.MethodDelete, path, handlers)
+	return group.returnObj()
 }
 
 // PATCH register PATCH handler
 func (group *RouterGroup) PATCH(path string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodPatch, path, handlers)
+	group.handle(http.MethodPatch, path, handlers)
+	return group.returnObj()
 }
 
 // PUT register PUT handler
 func (group *RouterGroup) PUT(path string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodPut, path, handlers)
+	group.handle(http.MethodPut, path, handlers)
+	return group.returnObj()
 }
 
 // OPTIONS register OPTIONS handler
 func (group *RouterGroup) OPTIONS(path string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodOptions, path, handlers)
+	group.handle(http.MethodOptions, path, handlers)
+	return group.returnObj()
 }
 
 // HEAD register HEAD handler
 func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodHead, path, handlers)
+	group.handle(http.MethodHead, path, handlers)
+	return group.returnObj()
 }
 
 // Any register all HTTP methods.
@@ -133,16 +139,30 @@ func (group *RouterGroup) Any(path string, handlers ...HandlerFunc) IRoutes {
 	group.handle(http.MethodHead, path, handlers)
 	group.handle(http.MethodOptions, path, handlers)
 	group.handle(http.MethodDelete, path, handlers)
-	group.handle(http.MethodConnect, path, handlers)
-	group.handle(http.MethodTrace, path, handlers)
 	return group.returnObj()
 }
 
-func (group *RouterGroup) handle(httpMethod, path string, handlers HandlersChain) IRoutes {
+func (group *RouterGroup) handle(method, path string, handlers HandlersChain) {
+	if method == "" {
+		panic("need http method")
+	}
+	if path == "" {
+		panic("need route path")
+	}
+	if len(handlers) == 0 {
+		panic("need HandlerFunc func(ctx *Context)")
+	}
+	method = strings.ToUpper(method)
+	if ok := httpMethods[method]; !ok {
+		panic("http method " + method + " not supported")
+	}
+	var match matchValue
+	if group.engine.Match(method, path, &match) {
+		panic("method: " + method + " path: " + path + " has been defined")
+	}
 	absolutePath := group.calculateAbsolutePath(path)
 	handlers = group.combineHandlers(handlers)
-	group.engine.addRoute(httpMethod, absolutePath, handlers)
-	return group.returnObj()
+	group.engine.addRoute(method, absolutePath, handlers)
 }
 
 // Static handler static dir
@@ -182,7 +202,7 @@ func (group *RouterGroup) createStaticHandler(path string, fs http.FileSystem) H
 			c.index = -1
 			return
 		}
-		f.Close()
+		_ = f.Close()
 
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}

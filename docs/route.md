@@ -34,6 +34,35 @@ GET POST PUT DELETE OPTIONS HEAD PATCH Any
 func (group *RouterGroup) Handle(httpMethod, path string, handlers ...HandlerFunc)
 ```
 
+使用 `r.Handle` 匹配 GET请求
+
+```go
+package main
+
+import "github.com/zituocn/gow"
+
+func main() {
+	r := gow.Default()
+	r.Handle("GET", "/", func(c *gow.Context) {
+		c.String("index")
+	})
+}
+```
+
+使用 `r.Handle` 同时匹配 GET和POST方法
+
+```go
+package main
+
+import "github.com/zituocn/gow"
+
+func main() {
+	r := gow.Default()
+	r.Handle("GET,POST", "/", func(c *gow.Context) {
+		c.String("index")
+	})
+}
+```
 
 ## 基础路由
 

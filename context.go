@@ -823,12 +823,10 @@ func (c *Context) ServerSecureJSON(code int, data interface{}) {
 	}
 	c.Header("Content-Type", ContentJSON)
 	c.Status(code)
-
 	b, err := json.Marshal(data)
 	if err != nil {
 		c.writeServerUnavailable(err.Error())
 	}
-
 	if bytes.HasPrefix(b, StringToBytes("[")) && bytes.HasSuffix(b, StringToBytes("]")) {
 		_, err = c.Writer.Write(StringToBytes(secureJSONPrefix))
 		if err != nil {

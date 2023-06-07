@@ -22,7 +22,6 @@ import (
 
 const (
 	defaultMultipartMemory = 32 << 20 // 32 MB
-	defaultMode            = "dev"
 	DevMode                = "dev"
 	ProdMode               = "prod"
 	defaultViews           = "views"
@@ -181,19 +180,20 @@ func (engine *Engine) SetIgnoreTrailingSlash(ignore bool) {
 	engine.ignoreTrailingSlash = ignore
 }
 
-// Run start http service
+// Run start http service default 127.0.0.1:8080
+//	r.Run()
+//	r.Run(8080)
+//	r.Run(":8080)
+//	r.Run("127.0.0.1:8080)
 func (engine *Engine) Run(args ...interface{}) (err error) {
 	defer func() { logy.Error(err) }()
-
 	engine.useMiddleware()
-
 	if engine.AutoRender {
 		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
 	}
 	if engine.RunMode == DevMode {
 		fmt.Printf("%s\n", logo)
 	}
-
 	address := engine.getAddress(args...)
 	logy.Infof("[%s] [%s] Listening and serving HTTP on http://%s\n", engine.AppName, engine.RunMode, address)
 	err = http.ListenAndServe(address, engine)
@@ -203,17 +203,13 @@ func (engine *Engine) Run(args ...interface{}) (err error) {
 // RunTLS  start https service
 func (engine *Engine) RunTLS(certFile, keyFile string, args ...interface{}) (err error) {
 	defer func() { logy.Error(err) }()
-
 	engine.useMiddleware()
-
 	if engine.AutoRender {
 		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
 	}
-
 	if engine.RunMode == DevMode {
 		fmt.Printf("%s\n", logo)
 	}
-
 	address := engine.getAddress(args...)
 	logy.Infof("[%s] [%s] Listening and serving HTTP on https://%s\n", engine.AppName, engine.RunMode, address)
 	err = http.ListenAndServeTLS(address, certFile, keyFile, engine)
@@ -223,18 +219,14 @@ func (engine *Engine) RunTLS(certFile, keyFile string, args ...interface{}) (err
 // RunUnix start unix:/ service
 func (engine *Engine) RunUnix(file string) (err error) {
 	defer func() { logy.Error(err) }()
-
 	engine.useMiddleware()
-
 	listener, err := net.Listen("unix", file)
 	if err != nil {
 		return
 	}
 	defer listener.Close()
 	defer os.Remove(file)
-
 	logy.Infof("[%s] [%s] Listening and serving HTTP on unix:/%s\n", engine.AppName, engine.RunMode, file)
-
 	err = http.Serve(listener, engine)
 	return
 }
@@ -242,11 +234,9 @@ func (engine *Engine) RunUnix(file string) (err error) {
 // RunFd start fd service
 func (engine *Engine) RunFd(fd int) (err error) {
 	defer func() { logy.Error(err) }()
-
 	if engine.RunMode == DevMode {
 		fmt.Printf("%s\n", logo)
 	}
-
 	f := os.NewFile(uintptr(fd), fmt.Sprintf("fd@%d", fd))
 	listener, err := net.FileListener(f)
 	if err != nil {
@@ -254,7 +244,6 @@ func (engine *Engine) RunFd(fd int) (err error) {
 	}
 	defer listener.Close()
 	err = http.Serve(listener, engine)
-
 	return
 }
 
@@ -289,7 +278,6 @@ func (engine *Engine) useMiddleware() {
 		InitSession()
 		engine.Use(Session())
 	}
-
 	// use gzip middleware
 	if engine.gzipOn {
 		engine.Use(Gzip(DefaultCompression))
@@ -309,9 +297,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		c.writermem.WriteHeaderNow()
 		return
 	}
-
 	c.handlers = engine.allNoRoute
-
 	serveError(c, http.StatusNotFound, default404Body)
 }
 
@@ -349,8 +335,9 @@ type RouteMapInfo struct {
 // PrintRouteMap print route map
 func (engine *Engine) PrintRouteMap() {
 	routeMap := engine.RouteMap()
-	for _, item := range routeMap {
-		fmt.Printf(" %8s  %-30s %5s %s \n", item.Method, item.Path, " ", item.Handler)
+	fmt.Printf("ROUTE MAP: \n")
+	for index, item := range routeMap {
+		fmt.Printf("%d %-8s  %-30s %5s %s \n", index+1, item.Method, item.Path, " ", item.Handler)
 	}
 }
 
@@ -425,6 +412,5 @@ func default404Handler(c *Context) {
 		}
 		return
 	}
-
 	c.writermem.WriteHeaderNow()
 }

@@ -82,7 +82,21 @@ func IndexHandler(c *gow.Context) {
 	}
 	c.JSON(h)
 }
+```
 
+自定义method，使用 `r.Handle`
+
+```go
+package main
+
+import "github.com/zituocn/gow"
+
+func main() {
+	r := gow.Default()
+	r.Handle("GET,POST", "/", func(c *gow.Context) {
+		c.String("index")
+	})
+}
 ```
 
 ### 1.2 运行
