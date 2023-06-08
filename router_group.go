@@ -156,11 +156,12 @@ func (group *RouterGroup) handle(method, path string, handlers HandlersChain) {
 	if ok := httpMethods[method]; !ok {
 		panic("http method " + method + " not supported")
 	}
-	var match matchValue
-	if group.engine.Match(method, path, &match) {
-		panic("method: " + method + " path: " + path + " has been defined")
-	}
+
 	absolutePath := group.calculateAbsolutePath(path)
+	var match matchValue
+	if group.engine.Match(method, absolutePath, &match) {
+		panic("method: " + method + " path: " + absolutePath + path + " has been defined")
+	}
 	handlers = group.combineHandlers(handlers)
 	group.engine.addRoute(method, absolutePath, handlers)
 }
