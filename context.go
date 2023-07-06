@@ -12,7 +12,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"gopkg.in/yaml.v3"
 	"io"
 	"io/ioutil"
@@ -852,9 +852,9 @@ func (c *Context) Render(code int, name string, data interface{}) {
 	if err := c.engine.Render.Render(c.Writer, name, data); err != nil {
 		//ignore "broken pipe" error
 		if !errors.Is(err, syscall.EPIPE) {
-			//use logy record html render error
+			//use logx record html render error
 			//2022-01-14 sam
-			logy.Errorf("html render error: %v", err)
+			logx.Errorf("html render error: %v", err)
 		}
 	}
 }

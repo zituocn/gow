@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -25,10 +25,10 @@ type Client struct {
 
 // ClientArg GRPC Client arg struct
 type ClientArg struct {
-	ServerAddr  string		// 直连  *必填
-	EtcdAddr    string		// 使用发现服务 *必填
+	ServerAddr  string // 直连  *必填
+	EtcdAddr    string // 使用发现服务 *必填
 	ClientName  string
-	ServiceName string		// *必填
+	ServiceName string // *必填
 }
 
 // NewClient return grpc Client obj
@@ -46,8 +46,8 @@ func NewClient(dis ClientArg) (*Client, error) {
 		etcdAddr:    etcdAddr,
 		clientName:  dis.ClientName,
 		serviceName: dis.ServiceName,
-		times:       0,		// timestamp
-		retry:       20,	// retry 20 times
+		times:       0,  // timestamp
+		retry:       20, // retry 20 times
 		retryTime:   50 * time.Millisecond,
 	}, nil
 }
@@ -144,7 +144,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 	startTime := time.Now()
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	if err != nil {
-		logy.Errorf("[GRPC] %s(%v)->%s(%v) | %s | err = %v",
+		logx.Errorf("[GRPC] %s(%v)->%s(%v) | %s | err = %v",
 			clientName,
 			clientIp,
 			serviceName,
@@ -152,7 +152,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 			method,
 			err)
 	} else {
-		logy.Infof("[GRPC] %13v | %s(%v)->%s(%v) | %s ",
+		logx.Infof("[GRPC] %13v | %s(%v)->%s(%v) | %s ",
 			time.Now().Sub(startTime),
 			clientName,
 			clientIp,

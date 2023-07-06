@@ -13,7 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials/insecure"
@@ -139,7 +139,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 	startTime := time.Now()
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	if err != nil {
-		logy.Errorf("%4s | %13v | %10s:%-10s -> %10s:%-10s | %s | %s",
+		logx.Errorf("%4s | %13v | %10s:%-10s -> %10s:%-10s | %s | %s",
 			"rpc",
 			time.Now().Sub(startTime),
 			clientName,
@@ -149,7 +149,7 @@ func unaryInterceptorClient(ctx context.Context, method string, req, reply inter
 			method,
 			err.Error())
 	} else {
-		logy.Infof("%4s | %13v | %10s:%-10s -> %10s:%-10s | %s ", "rpc", time.Now().Sub(startTime), clientName, clientIp, serviceName, cc.Target(), method)
+		logx.Infof("%4s | %13v | %10s:%-10s -> %10s:%-10s | %s ", "rpc", time.Now().Sub(startTime), clientName, clientIp, serviceName, cc.Target(), method)
 	}
 	return err
 }

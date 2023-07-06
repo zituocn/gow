@@ -9,6 +9,7 @@ package gow
 
 import (
 	"fmt"
+	"github.com/zituocn/logx"
 	"html/template"
 	"net"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zituocn/gow/lib/logy"
 	"github.com/zituocn/gow/render"
 )
 
@@ -186,7 +186,7 @@ func (engine *Engine) SetIgnoreTrailingSlash(ignore bool) {
 //	r.Run(":8080)
 //	r.Run("127.0.0.1:8080)
 func (engine *Engine) Run(args ...interface{}) (err error) {
-	defer func() { logy.Error(err) }()
+	defer func() { logx.Error(err) }()
 	engine.useMiddleware()
 	if engine.AutoRender {
 		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
@@ -195,14 +195,14 @@ func (engine *Engine) Run(args ...interface{}) (err error) {
 		fmt.Printf("%s\n", logo)
 	}
 	address := engine.getAddress(args...)
-	logy.Infof("[%s] [%s] Listening and serving HTTP on http://%s\n", engine.AppName, engine.RunMode, address)
+	logx.Infof("[%s] [%s] Listening and serving HTTP on http://%s\n", engine.AppName, engine.RunMode, address)
 	err = http.ListenAndServe(address, engine)
 	return
 }
 
 // RunTLS  start https service
 func (engine *Engine) RunTLS(certFile, keyFile string, args ...interface{}) (err error) {
-	defer func() { logy.Error(err) }()
+	defer func() { logx.Error(err) }()
 	engine.useMiddleware()
 	if engine.AutoRender {
 		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
@@ -211,14 +211,14 @@ func (engine *Engine) RunTLS(certFile, keyFile string, args ...interface{}) (err
 		fmt.Printf("%s\n", logo)
 	}
 	address := engine.getAddress(args...)
-	logy.Infof("[%s] [%s] Listening and serving HTTP on https://%s\n", engine.AppName, engine.RunMode, address)
+	logx.Infof("[%s] [%s] Listening and serving HTTP on https://%s\n", engine.AppName, engine.RunMode, address)
 	err = http.ListenAndServeTLS(address, certFile, keyFile, engine)
 	return
 }
 
 // RunUnix start unix:/ service
 func (engine *Engine) RunUnix(file string) (err error) {
-	defer func() { logy.Error(err) }()
+	defer func() { logx.Error(err) }()
 	engine.useMiddleware()
 	listener, err := net.Listen("unix", file)
 	if err != nil {
@@ -226,14 +226,14 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	}
 	defer listener.Close()
 	defer os.Remove(file)
-	logy.Infof("[%s] [%s] Listening and serving HTTP on unix:/%s\n", engine.AppName, engine.RunMode, file)
+	logx.Infof("[%s] [%s] Listening and serving HTTP on unix:/%s\n", engine.AppName, engine.RunMode, file)
 	err = http.Serve(listener, engine)
 	return
 }
 
 // RunFd start fd service
 func (engine *Engine) RunFd(fd int) (err error) {
-	defer func() { logy.Error(err) }()
+	defer func() { logx.Error(err) }()
 	if engine.RunMode == DevMode {
 		fmt.Printf("%s\n", logo)
 	}

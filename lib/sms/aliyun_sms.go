@@ -3,8 +3,8 @@ package sms
 import (
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
-	"github.com/zituocn/gow/lib/logy"
 	"github.com/zituocn/gow/lib/util"
+	"github.com/zituocn/logx"
 )
 
 // AliSmsClient aliyun sms client
@@ -65,7 +65,7 @@ func (m *AliSmsClient) send(phoneNumbers, sign, templateId, templateParam string
 		return
 	}
 	if m.HTTPDebugEnable {
-		logy.Debug("response:", response)
+		logx.Debug("response:", response)
 	}
 	if response.Message != "OK" && response.Code != "OK" {
 		err = fmt.Errorf("发送失败：%v", response.Message)

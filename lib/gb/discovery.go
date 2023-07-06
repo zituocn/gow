@@ -12,7 +12,7 @@ package gb
 import (
 	"context"
 	"errors"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/resolver"
@@ -86,7 +86,7 @@ func (d *Discovery) Scheme() string {
 }
 
 func (d *Discovery) ResolveNow(options resolver.ResolveNowOptions) {
-	logy.Debug("ResolveNow")
+	logx.Debug("ResolveNow")
 }
 
 func (d *Discovery) Close() {

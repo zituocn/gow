@@ -64,7 +64,7 @@ package main
 
 import (
 	"context"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"github.com/zituocn/srd"
 	"github.com/zituocn/srd/demo/pb"
 	"log"
@@ -102,7 +102,7 @@ type UserService struct {
 }
 
 func (s *UserService) GetUser(ctx context.Context, req *pb.UserRequest) (*pb.UserResponse, error) {
-	logy.Debugf("from %d", req.Uid)
+	logx.Debugf("from %d", req.Uid)
 	return &pb.UserResponse{
 		Uid:      req.Uid,
 		Username: "zituocn",

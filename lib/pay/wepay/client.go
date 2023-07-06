@@ -16,8 +16,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/zituocn/gow/lib/logy"
 	"github.com/zituocn/gow/lib/util"
+	"github.com/zituocn/logx"
 	"io/ioutil"
 	"net/http"
 	"sort"
@@ -234,7 +234,7 @@ func (c *Client) RefundNotify(req *http.Request) (Params, error) {
 	//对加密串做base64解码
 	decodeInfo, err := base64.StdEncoding.DecodeString(reqInfo)
 	if err != nil {
-		logy.Errorf(fmt.Sprintf("对加密串做base64解码出错:%v", err))
+		logx.Errorf(fmt.Sprintf("对加密串做base64解码出错:%v", err))
 	}
 
 	//对商户key做md5

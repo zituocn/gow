@@ -144,7 +144,5 @@ func doRequest(client *http.Client, result interface{}, url string, data url.Val
 
 	defer res.Body.Close()
 
-	//logy.Errorf("res code === %v   %v",res.Status,res.StatusCode)
-
 	return json.NewDecoder(res.Body).Decode(result)
 }

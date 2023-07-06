@@ -12,7 +12,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"time"
 )
 
@@ -48,7 +48,7 @@ func InitDefaultDB(db *RedisConfig) (err error) {
 func GetRDB() *redis.Client {
 	m, ok := dbs[defaultDBName]
 	if !ok {
-		logy.Panic("[redis] 未init，请参照使用说明")
+		logx.Panic("[redis] 未init，请参照使用说明")
 	}
 	return m
 }
@@ -71,7 +71,7 @@ func InitDB(list []*RedisConfig) (err error) {
 func GetRDBByName(name string) *redis.Client {
 	m, ok := dbs[name]
 	if !ok {
-		logy.Panic("[redis] 未init，请参照使用说明")
+		logx.Panic("[redis] 未init，请参照使用说明")
 	}
 	return m
 }
@@ -90,7 +90,7 @@ func newRedis(rc *RedisConfig) {
 		rdb *redis.Client
 	)
 	if rc.Host == "" || rc.Port == 0 || rc.Name == "" {
-		logy.Panicf("[redis]-[%s] 配置信息获取失败", rc.Name)
+		logx.Panicf("[redis]-[%s] 配置信息获取失败", rc.Name)
 		return
 	}
 	if rc.DB < 0 {
@@ -114,7 +114,7 @@ func newRedis(rc *RedisConfig) {
 
 	// COMMAND ping
 	for _, err := rdb.Ping(ctx).Result(); err != nil; {
-		logy.Errorf("[redis]-%s 连接异常: %v", rc.string(), err)
+		logx.Errorf("[redis]-%s 连接异常: %v", rc.string(), err)
 		time.Sleep(5 * time.Second)
 	}
 

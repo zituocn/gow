@@ -8,7 +8,7 @@ package gow
 
 import (
 	"github.com/mattn/go-isatty"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"net/http"
 	"os"
 	"time"
@@ -110,7 +110,7 @@ func (p *LogFormatterParams) ResetColor() string {
 	return reset
 }
 
-// IsOutputColor indicates whether can colors be outputted to the logy.
+// IsOutputColor indicates whether can colors be outputted to the logx.
 func (p *LogFormatterParams) IsOutputColor() bool {
 	return consoleColorMode == forceColor || (consoleColorMode == autoColor && p.isTerm)
 }
@@ -172,7 +172,7 @@ func Logger() HandlerFunc {
 				param.Latency = param.Latency - param.Latency%time.Second
 			}
 
-			logy.Infof("%s %3d %s| %13v | %15s |%s %-7s %s %s%s",
+			logx.Infof("%s %3d %s| %13v | %15s |%s %-7s %s %s%s",
 				statusColor, param.StatusCode, resetColor,
 				param.Latency,
 				param.ClientIP,

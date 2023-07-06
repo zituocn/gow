@@ -160,7 +160,7 @@ Content-Length: 67
 * [HTML模板函数](https://github.com/zituocn/gow/blob/main/docs/html.md)
 * [文件的上传及下载](https://github.com/zituocn/gow/blob/main/docs/upload.md)
 * [实现反向代理(new)](https://github.com/zituocn/gow/blob/main/docs/proxy.md)
-* [lib 库介绍：logy mysql config ](https://github.com/zituocn/gow/blob/main/docs/lib.md)
+* [lib 库介绍：logx mysql config ](https://github.com/zituocn/logx)
 
 ## 3. 感谢
 

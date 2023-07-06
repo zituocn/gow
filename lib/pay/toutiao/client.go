@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"io/ioutil"
 	"net/http"
 	"sort"
@@ -62,19 +62,19 @@ func (c *Client) CreateOrder(body, outTradeNo string, totalFee int64) (rslt *Ord
 
 	resp, err := c.post(createOrderUrl, params)
 	if err != nil {
-		logy.Errorf("下单出错:%v", err)
+		logx.Errorf("下单出错:%v", err)
 		return
 	}
 	data := new(CreateOrderResp)
 	if err = json.Unmarshal([]byte(resp), &data); err != nil {
-		logy.Errorf("解析预下单响应参数出错:%v", err)
+		logx.Errorf("解析预下单响应参数出错:%v", err)
 		return
 	}
 	//状态码 0-业务处理成功
 	if data.ErrNo == 0 {
 		rslt = data.Data
 	} else {
-		logy.Errorf("预下单业务处理失败,错误码：%v,错误信息:%v", data.ErrNo, data.ErrTips)
+		logx.Errorf("预下单业务处理失败,错误码：%v,错误信息:%v", data.ErrNo, data.ErrTips)
 		return
 	}
 	return
@@ -86,14 +86,14 @@ func (c *Client) QueryOrder(outTradeNo string) (rslt *QueryOrderRespData, err er
 	params.SetString("out_order_no", outTradeNo)
 	resp, err := c.post(queryOrderUrl, params)
 	if err != nil {
-		logy.Errorf("查订单出错:%v", err)
+		logx.Errorf("查订单出错:%v", err)
 		return
 	}
 	//fmt.Println("resp:",resp)
 	ret := new(QueryOrderResp)
 	err = json.Unmarshal([]byte(resp), &ret)
 	if err != nil {
-		logy.Errorf("解析查询订单响应参数出错:%v", err)
+		logx.Errorf("解析查询订单响应参数出错:%v", err)
 		return
 	}
 	rslt = ret.PaymentInfo
@@ -134,7 +134,7 @@ func (c *Client) Notify(req *http.Request) (msgData *NotifyMsgData, ret *NotifyR
 }
 
 // Refund 申请退款
-func (c *Client) Refund(outTradeNo, outRefundNo, refundDesc string, refundFee int64) (refundNo string,err error) {
+func (c *Client) Refund(outTradeNo, outRefundNo, refundDesc string, refundFee int64) (refundNo string, err error) {
 	params := make(Params)
 	params.SetString("out_order_no", outTradeNo)
 	params.SetString("out_refund_no", outRefundNo)
@@ -145,58 +145,58 @@ func (c *Client) Refund(outTradeNo, outRefundNo, refundDesc string, refundFee in
 	}
 	params.SetString("notify_url", c.RefundNotifyUrl)
 
-	logy.Infof("c.RefundNotifyUrl:%v，outOrderNo:%v, outRefundNo:%v ",c.RefundNotifyUrl,outTradeNo,outRefundNo)
+	logx.Infof("c.RefundNotifyUrl:%v，outOrderNo:%v, outRefundNo:%v ", c.RefundNotifyUrl, outTradeNo, outRefundNo)
 
 	params.SetInt64("disable_msg", int64(0)) //是否屏蔽担保支付的推送消息，1-屏蔽 0-非屏蔽，
 
 	resp, err := c.post(createRefundUrl, params)
 	if err != nil {
-		logy.Errorf("申请退款出错:%v", err)
+		logx.Errorf("申请退款出错:%v", err)
 		return
 	}
 	data := new(RefundResp)
 	if err = json.Unmarshal([]byte(resp), &data); err != nil {
-		logy.Errorf("解析预下单响应参数出错:%v", err)
+		logx.Errorf("解析预下单响应参数出错:%v", err)
 		return
 	}
 	//状态码 0-业务处理成功
 	if data.ErrNo == 0 {
 		refundNo = data.RefundNo
 	} else {
-		logy.Errorf("申请退款业务处理失败,错误码：%v,错误信息:%v", data.ErrNo, data.ErrTips)
+		logx.Errorf("申请退款业务处理失败,错误码：%v,错误信息:%v", data.ErrNo, data.ErrTips)
 		return
 	}
 	return
 }
 
 // RefundQuery 退款查询
-func (c *Client) RefundQuery(outRefundNo string)(rslt *RefundQueryData,err error) {
+func (c *Client) RefundQuery(outRefundNo string) (rslt *RefundQueryData, err error) {
 	params := make(Params)
 	params.SetString("out_refund_no", outRefundNo)
 	resp, err := c.post(queryRefundUrl, params)
 	if err != nil {
-		logy.Errorf("请求退款查询出错:%v", err)
+		logx.Errorf("请求退款查询出错:%v", err)
 		return
 	}
 	//fmt.Println("resp:",resp)
 	ret := new(RefundQueryResp)
 	err = json.Unmarshal([]byte(resp), &ret)
 	if err != nil {
-		logy.Errorf("解析退款查询响应参数出错:%v", err)
+		logx.Errorf("解析退款查询响应参数出错:%v", err)
 		return
 	}
 	//状态码 0-业务处理成功
 	if ret.ErrNo == 0 {
 		rslt = ret.RefundInfo
 	} else {
-		logy.Errorf("退款查询业务处理失败,错误码：%v,错误信息:%v", ret.ErrNo, ret.ErrTips)
+		logx.Errorf("退款查询业务处理失败,错误码：%v,错误信息:%v", ret.ErrNo, ret.ErrTips)
 		return
 	}
 	return
 }
 
 // RefundNotify 退款回调
-func (c *Client) RefundNotify(req *http.Request) (msgData *RefundNotifyMsgData, ret *NotifyReturn, err error){
+func (c *Client) RefundNotify(req *http.Request) (msgData *RefundNotifyMsgData, ret *NotifyReturn, err error) {
 	content, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		return

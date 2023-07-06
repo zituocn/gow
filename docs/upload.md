@@ -157,4 +157,4 @@ http://127.0.0.1:8080/v1/down2
 * [做一个网站 && HTML模板使用指南](https://github.com/zituocn/gow/blob/main/docs/website.md)
 * [HTML模板函数](https://github.com/zituocn/gow/blob/main/docs/html.md)
 * [文件的上传及下载](https://github.com/zituocn/gow/blob/main/docs/upload.md)
-* [lib 库介绍：logy mysql config ](https://github.com/zituocn/gow/blob/main/docs/lib.md)
+* [lib 库介绍：logx mysql config ](https://github.com/zituocn/logx)

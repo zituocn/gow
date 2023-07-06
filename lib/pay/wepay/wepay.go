@@ -9,8 +9,8 @@ package wepay
 import (
 	"errors"
 	"fmt"
-	"github.com/zituocn/gow/lib/logy"
 	"github.com/zituocn/gow/lib/util"
+	"github.com/zituocn/logx"
 
 	"net/http"
 	"strings"
@@ -285,11 +285,11 @@ func (m *WxAPI) Refund(transactionID, outTradeNo, outRefundNo, refundDesc string
 	if params.GetString("return_code") == "SUCCESS" {
 		refundId = params.GetString("refund_id")
 		if params.GetString("err_code") != "" {
-			logy.Errorf(fmt.Sprintf("申请退款失败：错误码：%v,错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des")))
+			logx.Errorf(fmt.Sprintf("申请退款失败：错误码：%v,错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des")))
 			err = errors.New(params.GetString("err_code_des"))
 		}
 	} else {
-		logy.Errorf("申请退款提交业务失败：%v", params.GetString("return_msg"))
+		logx.Errorf("申请退款提交业务失败：%v", params.GetString("return_msg"))
 	}
 	return
 }
@@ -337,15 +337,15 @@ func (m *WxAPI) RefundQuery(transactionID, outTradeNo, outRefundNo, refundId str
 			recvName = params.GetString("refund_recv_accout_0") //退款入账账户
 
 			if status == "REFUNDCLOSE" {
-				logy.Errorf("退款已关闭，商户发起退款失败,错误码：%v，错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des"))
+				logx.Errorf("退款已关闭，商户发起退款失败,错误码：%v，错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des"))
 			} else if status == "CHANGE" {
-				logy.Errorf("退款异常，退款到银行发现用户的卡作废或者冻结了，导致原路退款银行卡失败，错误码：%v，错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des"))
+				logx.Errorf("退款异常，退款到银行发现用户的卡作废或者冻结了，导致原路退款银行卡失败，错误码：%v，错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des"))
 			}
 		} else {
-			logy.Errorf("单号不匹配")
+			logx.Errorf("单号不匹配")
 		}
 	} else {
-		logy.Errorf("查询退款业务失败：%v", params.GetString("return_msg"))
+		logx.Errorf("查询退款业务失败：%v", params.GetString("return_msg"))
 	}
 	return
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"time"
 )
 
@@ -38,7 +38,7 @@ func InitDefaultDB(db *DBConfig) (err error) {
 		return
 	}
 	defaultDBName = db.Name
-	dbs = make(map[string]*gorm.DB,1)
+	dbs = make(map[string]*gorm.DB, 1)
 	newORM(db)
 	return
 }
@@ -49,7 +49,7 @@ func InitDB(list []*DBConfig) (err error) {
 		err = fmt.Errorf("没有需要init的DB")
 		return
 	}
-	dbs = make(map[string]*gorm.DB,len(list))
+	dbs = make(map[string]*gorm.DB, len(list))
 	for _, item := range list {
 		newORM(item)
 	}
@@ -72,7 +72,7 @@ func newORM(db *DBConfig) {
 		str = str + "&interpolateParams=true"
 	}
 	for orm, err = gorm.Open(dbType, str); err != nil; {
-		logy.Error(fmt.Sprintf("[DB]-[%v] 连接异常:%v，正在重试: %v", db.Name, err, str))
+		logx.Error(fmt.Sprintf("[DB]-[%v] 连接异常:%v，正在重试: %v", db.Name, err, str))
 		time.Sleep(5 * time.Second)
 		orm, err = gorm.Open(dbType, str)
 	}
@@ -85,7 +85,7 @@ func newORM(db *DBConfig) {
 func GetORM() *gorm.DB {
 	m, ok := dbs[defaultDBName]
 	if !ok {
-		logy.Panic("[DB] 未init，请参照使用说明")
+		logx.Panic("[DB] 未init，请参照使用说明")
 	}
 	return m
 }
@@ -94,7 +94,7 @@ func GetORM() *gorm.DB {
 func GetORMByName(name string) *gorm.DB {
 	m, ok := dbs[name]
 	if !ok {
-		logy.Panic("[DB] 未init，请参照使用说明")
+		logx.Panic("[DB] 未init，请参照使用说明")
 	}
 	return m
 }

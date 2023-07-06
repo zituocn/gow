@@ -2,8 +2,8 @@ package pdf
 
 import (
 	"fmt"
-	"github.com/zituocn/gow/lib/logy"
 	"github.com/zituocn/gow/lib/pdf/core"
+	"github.com/zituocn/logx"
 	"io"
 	"net/http"
 	"os"
@@ -38,7 +38,7 @@ func NewServerImage(url, path string, pdf *core.Report) (img *Image, err error) 
 	imagesJpeg := fmt.Sprintf("%s/%s.jpeg", path, fileName)
 
 	if exists(imagesJpeg) {
-		//logy.Info("有这个图片")
+		//logx.Info("有这个图片")
 		w, h := GetImageWidthAndHeight(imagesJpeg)
 		img = &Image{
 			pdf:          pdf,
@@ -93,7 +93,7 @@ func NewImageFromServer(path string, pdf *core.Report) *Image {
 		tempFilePath = path[0:index+1] + "jpeg"
 		err := ConvertPNG2JPEG(picturePath, tempFilePath)
 		if err != nil {
-			logy.Errorf("[PDF]转换图片出错:%v", err)
+			logx.Errorf("[PDF]转换图片出错:%v", err)
 		}
 		picturePath = tempFilePath
 	}

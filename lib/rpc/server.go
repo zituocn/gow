@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"net"
@@ -27,8 +27,8 @@ type Server struct {
 // ServerArg GRPC Server Arg struct
 type ServerArg struct {
 	IP       string
-	Port     int	// *必填
-	Name     string	// *必填
+	Port     int    // *必填
+	Name     string // *必填
 	EtcdAddr string // 多个地址必须使用","分开; 如: 192.168.0.1:2379,192.168.0.2:2379
 	Register bool   // 是否启用服务注册
 }
@@ -95,7 +95,7 @@ func (m *Server) Run() {
 	go func() {
 		err := m.Server.Serve(m.Listener)
 		if err != nil {
-			logy.Errorf("[RPC] failed to listen:%v", err)
+			logx.Errorf("[RPC] failed to listen:%v", err)
 		}
 	}()
 
@@ -125,7 +125,7 @@ func (m *Server) register() {
 	if err != nil {
 		panic("[RPC] grpc服务注册失败 err = " + err.Error())
 	} else {
-		logy.Infof("[RPC] Register Succeed; Key = %s ", key)
+		logx.Infof("[RPC] Register Succeed; Key = %s ", key)
 	}
 
 	ch := make(chan os.Signal, 1)
@@ -183,7 +183,7 @@ func streamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamS
 	}
 	err := handler(srv, newWrappedStream(ss))
 	if err != nil {
-		logy.Errorf("[RPC] failed with error :%v", err)
+		logx.Errorf("[RPC] failed with error :%v", err)
 	}
 	return err
 }

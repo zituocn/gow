@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/gkzy/gini"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/logx"
 	"os"
 	"strings"
 )
@@ -50,7 +50,7 @@ func initConfig() {
 func InitLoad(fileName string) {
 	err := ini.Load(fileName)
 	if err != nil {
-		logy.Warnf("failed to read configuration file：[%s] err: %v", fileName, err.Error())
+		logx.Warnf("failed to read configuration file：[%s] err: %v", fileName, err.Error())
 	}
 }
 
