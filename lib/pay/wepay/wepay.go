@@ -17,15 +17,15 @@ import (
 	"time"
 )
 
-//WxAPI 调用实体
+// WxAPI 调用实体
 type WxAPI struct {
 	Client *Client
 }
 
-//NewWxAPI init
-//account基本的商户信息
-//notifyURL 异步通知地址
-//endMinute 订单有效期
+// NewWxAPI init
+// account基本的商户信息
+// notifyURL 异步通知地址
+// endMinute 订单有效期
 func NewWxAPI(wxConfig *WxConfig) *WxAPI {
 	return &WxAPI{
 		Client: &Client{
@@ -37,7 +37,7 @@ func NewWxAPI(wxConfig *WxConfig) *WxAPI {
 	}
 }
 
-//UnifiedOrder 统一下单接口
+// UnifiedOrder 统一下单接口
 func (m *WxAPI) UnifiedOrder(body string, outTradeNo string, totalFee int, openID string, clientIP string, tradeType TradeType) (Params, error) {
 	params := make(Params)
 	params.SetString("body", body)
@@ -60,7 +60,7 @@ func (m *WxAPI) UnifiedOrder(body string, outTradeNo string, totalFee int, openI
 	return m.Client.UnifiedOrder(params)
 }
 
-//AppTrade APP下单
+// AppTrade APP下单
 func (m *WxAPI) AppTrade(body, outTradeNo string, totalFee int, clientIP string) (ret *AppPayResp, err error) {
 	params, err := m.UnifiedOrder(body, outTradeNo, totalFee, "", clientIP, TradeTypeApp)
 	if err != nil {
@@ -100,8 +100,8 @@ func (m *WxAPI) AppTrade(body, outTradeNo string, totalFee int, clientIP string)
 	return
 }
 
-//NativeTrade 扫码支付下单
-//使用时把返回的code_url生成二维码，供前台用户扫码支付
+// NativeTrade 扫码支付下单
+// 使用时把返回的code_url生成二维码，供前台用户扫码支付
 func (m *WxAPI) NativeTrade(body, outTradeNo string, totalFee int) (ret string, err error) {
 	params, err := m.UnifiedOrder(body, outTradeNo, totalFee, "", "", TradeTypeNative)
 	if err != nil {
@@ -115,7 +115,7 @@ func (m *WxAPI) NativeTrade(body, outTradeNo string, totalFee int) (ret string, 
 	return
 }
 
-//H5Trade H5下单
+// H5Trade H5下单
 func (m *WxAPI) H5Trade(body, outTradeNo string, totalFee int, clientIP string) (ret string, err error) {
 	params, err := m.UnifiedOrder(body, outTradeNo, totalFee, "", clientIP, TradeTypeH5)
 	if err != nil {
@@ -129,8 +129,8 @@ func (m *WxAPI) H5Trade(body, outTradeNo string, totalFee int, clientIP string) 
 	return
 }
 
-//JSAPITrade 公众号支付
-//需要传入公众号对应用户的openID
+// JSAPITrade 公众号支付
+// 需要传入公众号对应用户的openID
 func (m *WxAPI) JSAPITrade(body, outTradeNo string, totalFee int, openID, clientIP string) (ret string, err error) {
 	params, err := m.UnifiedOrder(body, outTradeNo, totalFee, openID, clientIP, TradeTypeJSAPI)
 	if err != nil {
@@ -151,8 +151,8 @@ func (m *WxAPI) JSAPITrade(body, outTradeNo string, totalFee int, openID, client
 	return
 }
 
-//AppletTrade 小程序支付
-//需要传入公众号对应用户的openID
+// AppletTrade 小程序支付
+// 需要传入公众号对应用户的openID
 func (m *WxAPI) AppletTrade(body, outTradeNo string, totalFee int, openID, clientIP string) (ret *AppletPayResp, err error) {
 	params, err := m.UnifiedOrder(body, outTradeNo, totalFee, openID, clientIP, TradeTypeJSAPI)
 	if err != nil {
@@ -194,11 +194,11 @@ func (m *WxAPI) AppletTrade(body, outTradeNo string, totalFee int, openID, clien
 	return
 }
 
-//Notify 异步通知
-//返回异步通知状态信息
-//调用方拿到返回值后，需要根据 outTradeNo tradeNo openID等值，做进一点检验，如果检验失败，设置ret.ReturnCode="FAIL"；
-//成功时，需要回写返回值到本地
-//最后以xml方式输出 ret
+// Notify 异步通知
+// 返回异步通知状态信息
+// 调用方拿到返回值后，需要根据 outTradeNo tradeNo openID等值，做进一点检验，如果检验失败，设置ret.ReturnCode="FAIL"；
+// 成功时，需要回写返回值到本地
+// 最后以xml方式输出 ret
 func (m *WxAPI) Notify(req *http.Request) (ret *NotifyRet, outTradeNo, tradeNo, openID string, err error) {
 	params, err := m.Client.Notify(req)
 	if err != nil {
@@ -219,7 +219,8 @@ func (m *WxAPI) Notify(req *http.Request) (ret *NotifyRet, outTradeNo, tradeNo, 
 	return
 }
 
-//OrderQuery 订单查询
+// OrderQuery 订单查询
+//
 //	返回是否成功，和错误信息
 func (m *WxAPI) OrderQuery(transactionID, outTradeNo string) (state bool, tradeNo string, err error) {
 	if transactionID == "" && outTradeNo == "" {
@@ -325,6 +326,11 @@ func (m *WxAPI) RefundQuery(transactionID, outTradeNo, outRefundNo, refundId str
 		if refundId != "" && refundId == params.GetString("refund_id_0") {
 			tag = true
 		}
+
+		logy.Debugf("refund_id_0:%v", params.GetString("refund_id_0"))
+		logy.Debugf("refund_id_1:%v", params.GetString("refund_id_1"))
+		logy.Debugf("refund_id_2:%v", params.GetString("refund_id_2"))
+
 		if tag {
 			//退款状态
 			/*
@@ -351,9 +357,10 @@ func (m *WxAPI) RefundQuery(transactionID, outTradeNo, outRefundNo, refundId str
 }
 
 // RefundNotify 退款异步通知
+//
 //	返回异步通知状态信息
 //	以xml方式输出 ret
-func (m *WxAPI) RefundNotify(req *http.Request) (ret *NotifyRet, outTradeNo, refundStatus, recvName string, err error) {
+func (m *WxAPI) RefundNotify(req *http.Request) (ret *NotifyRet, refundData *WXPayRefundSuccessNotifyResp, err error) {
 	params, err := m.Client.RefundNotify(req)
 	if err != nil {
 		return
@@ -364,8 +371,19 @@ func (m *WxAPI) RefundNotify(req *http.Request) (ret *NotifyRet, outTradeNo, ref
 		ret.ReturnMsg = "OK"
 	}
 	//返回给调用方做校验证和回写使用；
-	recvName = params.GetString("refund_recv_accout")
-	refundStatus = params.GetString("refund_status")
-	outTradeNo = params.GetString("out_trade_no")
+	//recvName = params.GetString("refund_recv_accout")
+	//refundStatus = params.GetString("refund_status")
+	//outTradeNo = params.GetString("out_trade_no")
+	//outRefundNo = params.GetString("out_refund_no")
+	refundData = &WXPayRefundSuccessNotifyResp{
+		TransactionId:     params.GetString("transaction_id"),
+		OutTradeNo:        params.GetString("out_trade_no"),
+		RefundId:          params.GetString("refund_id"),
+		OutRefundNo:       params.GetString("out_refund_no"),
+		RefundStatus:      params.GetString("refund_status"),
+		RefundRecvAccount: params.GetString("refund_recv_accout"),
+		RefundFee:         params.GetInt64("refund_fee"),
+		SuccessTime:       params.GetString("success_time"),
+	}
 	return
 }
