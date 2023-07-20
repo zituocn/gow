@@ -327,9 +327,9 @@ func (m *WxAPI) RefundQuery(transactionID, outTradeNo, outRefundNo, refundId str
 			tag = true
 		}
 
-		logy.Debugf("refund_id_0:%v", params.GetString("refund_id_0"))
-		logy.Debugf("refund_id_1:%v", params.GetString("refund_id_1"))
-		logy.Debugf("refund_id_2:%v", params.GetString("refund_id_2"))
+		//logx.Debugf("refund_id_0:%v", params.GetString("refund_id_0"))
+		//logx.Debugf("refund_id_1:%v", params.GetString("refund_id_1"))
+		//logx.Debugf("refund_id_2:%v", params.GetString("refund_id_2"))
 
 		if tag {
 			//退款状态
