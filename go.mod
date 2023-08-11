@@ -8,7 +8,6 @@ require (
 	github.com/clbanning/mxj v1.8.4
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gkzy/gini v0.1.0
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gomodule/redigo v1.8.9
 	github.com/imroc/req v0.3.2
 	github.com/jinzhu/gorm v1.9.16
@@ -27,6 +26,7 @@ require (
 )
 
 require (
+	github.com/redis/go-redis/v9 v9.0.5
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/zituocn/logx v0.0.2
 )

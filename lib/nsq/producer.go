@@ -20,7 +20,6 @@ import (
 	gnsq "github.com/nsqio/go-nsq"
 )
 
-// Producer Producer
 type Producer struct {
 	P *gnsq.Producer
 }
@@ -45,7 +44,7 @@ func NewProducer(addr string) (producer *Producer, err error) {
 	return
 }
 
-// Publish publish topic
+// Publish  topic
 //	return error
 func (m *Producer) Publish(topic string, data []byte) (err error) {
 	if m.P == nil {

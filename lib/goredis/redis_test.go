@@ -10,10 +10,10 @@ import (
 func init() {
 	err := InitDefaultDB(&RedisConfig{
 		Name:     "test",
-		Host:     "192.168.0.197",
+		Host:     "127.0.0.1",
 		Port:     6379,
 		Pool:     1000,
-		Password: "123456",
+		Password: "2236236",
 		DB:       3,
 	})
 	if err != nil {

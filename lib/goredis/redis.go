@@ -1,7 +1,7 @@
 /*
 go redis的简单封装
 可实现多个实例的连接
-使用库： github.com/go-redis/redis/v8
+使用库： github.com/redis/go-redis/v9
 sam
 2022-04-01
 */
@@ -11,7 +11,7 @@ package goredis
 import (
 	"context"
 	"fmt"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/zituocn/logx"
 	"time"
 )
@@ -104,7 +104,6 @@ func newRedis(rc *RedisConfig) {
 		Password:     rc.Password,
 		DB:           rc.DB,
 		PoolSize:     rc.Pool,
-		IdleTimeout:  30 * time.Second,
 		DialTimeout:  5 * time.Second,
 		MaxRetries:   -1,
 		MinIdleConns: 10,
