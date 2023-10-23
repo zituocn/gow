@@ -10,7 +10,6 @@ require (
 	github.com/gkzy/gini v0.1.0
 	github.com/gomodule/redigo v1.8.9
 	github.com/imroc/req v0.3.2
-	github.com/jinzhu/gorm v1.9.16
 	github.com/mattn/go-isatty v0.0.17
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -26,7 +25,10 @@ require (
 )
 
 require (
+	github.com/jinzhu/gorm v1.9.16
 	github.com/redis/go-redis/v9 v9.0.5
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/zituocn/logx v0.0.2
+	gorm.io/driver/mysql v1.5.2
+	gorm.io/gorm v1.25.2-0.20230530020048-26663ab9bf55
 )

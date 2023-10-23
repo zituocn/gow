@@ -1,10 +1,11 @@
-package mysql
+package orm
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/zituocn/logx"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"time"
 )
 
@@ -14,10 +15,6 @@ var (
 
 	//defaultDBName
 	defaultDBName string
-)
-
-const (
-	dbType = "mysql"
 )
 
 // DBConfig mysql配置文件
@@ -53,7 +50,6 @@ func InitDB(list []*DBConfig) (err error) {
 	for _, item := range list {
 		newORM(item)
 	}
-
 	return
 }
 
@@ -64,20 +60,22 @@ func newORM(db *DBConfig) {
 		err error
 	)
 	if db.User == "" || db.Password == "" || db.Host == "" || db.Port == 0 {
-		panic(fmt.Sprintf("[DB]-[%s] 数据库配置信息获取失败", db.Name))
+		logx.Panicf("[DB]-[%s] 数据库配置信息获取失败", db.Name)
+		return
 	}
-
+	config := &gorm.Config{}
+	if db.Debug {
+		config.Logger = logger.Default.LogMode(logger.Info)
+	}
 	str := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", db.User, db.Password, db.Host, db.Port, db.Name) + "?charset=utf8mb4&parseTime=true&loc=Local"
 	if db.DisablePrepared {
 		str = str + "&interpolateParams=true"
 	}
-	for orm, err = gorm.Open(dbType, str); err != nil; {
-		logx.Error(fmt.Sprintf("[DB]-[%v] 连接异常:%v，正在重试: %v", db.Name, err, str))
+	for orm, err = gorm.Open(mysql.Open(str), config); err != nil; {
+		logx.Errorf("[DB]-[%v] 连接异常:%v，正在重试: %v", db.Name, err, str)
 		time.Sleep(5 * time.Second)
-		orm, err = gorm.Open(dbType, str)
+		orm, err = gorm.Open(mysql.Open(str), config)
 	}
-	orm.LogMode(db.Debug)
-	orm.CommonDB()
 	dbs[db.Name] = orm
 }
 
@@ -85,7 +83,7 @@ func newORM(db *DBConfig) {
 func GetORM() *gorm.DB {
 	m, ok := dbs[defaultDBName]
 	if !ok {
-		logx.Panic("[DB] 没有初始化mysql连接，请参考github.com/zituocn/gow/lib/mysql的配置")
+		logx.Panic("[DB] 没有初始化mysql连接，请参考github.com/zituocn/gow/lib/orm 的配置")
 	}
 	return m
 }
@@ -94,7 +92,7 @@ func GetORM() *gorm.DB {
 func GetORMByName(name string) *gorm.DB {
 	m, ok := dbs[name]
 	if !ok {
-		logx.Panic("[DB] 没有初始化mysql连接，请参考github.com/zituocn/gow/lib/mysql的配置")
+		logx.Panic("[DB] 没有初始化mysql连接，请参考github.com/zituocn/gow/lib/orm 的配置")
 	}
 	return m
 }
