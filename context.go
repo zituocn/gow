@@ -115,6 +115,7 @@ func (c *Context) FullPath() string {
 }
 
 // Next c.Next method
+//
 //	call func: c.handler[i](c)
 func (c *Context) Next() {
 	c.index++
@@ -140,6 +141,8 @@ func (c *Context) Abort() {
 }
 
 // StopRun stop run handler
+//
+//	c.StopRun()
 func (c *Context) StopRun() {
 	panic(stopRun)
 }
@@ -317,6 +320,7 @@ func (c *Context) KeyStringMapStringSlice(key string) (smss map[string][]string)
 */
 
 // Header set response header
+//
 //	c.Header("Server","gow")
 func (c *Context) Header(key, value string) {
 	if value == "" {
@@ -327,6 +331,8 @@ func (c *Context) Header(key, value string) {
 }
 
 // GetHeader returns value from request headers.
+//
+//	userAgent:=c.GetHeader("user-agent)
 func (c *Context) GetHeader(key string) string {
 	return c.Request.Header.Get(key)
 }
@@ -337,7 +343,10 @@ Request
 */
 
 // GetIP return k8s Cluster ip
-//	default 10.10.10.2
+//
+//	ip:=c.GetIP()
+//
+// default 10.10.10.2
 func (c *Context) GetIP() (ip string) {
 	//header传递传递的IP
 	ip = c.GetHeader("ip")
@@ -366,6 +375,7 @@ func (c *Context) GetIP() (ip string) {
 }
 
 // ClientIP return client ip
+//
 //	return c.Request.RemoteAddr[0]
 func (c *Context) ClientIP() (ip string) {
 	addr := c.Request.RemoteAddr
@@ -377,7 +387,9 @@ func (c *Context) ClientIP() (ip string) {
 }
 
 // DecodeJSONBody Unmarshal request body to v
-//	return error
+//
+//	user:=&User{}
+//	err:=c.DecodeJSONBody(&user)
 func (c *Context) DecodeJSONBody(v interface{}) error {
 	body := c.Body()
 	return json.Unmarshal(body, &v)
@@ -403,6 +415,7 @@ func (c *Context) UserAgent() string {
 }
 
 // IsAjax return is ajax request
+//
 //	return X-Requested-With==XMLHttpRequest
 func (c *Context) IsAjax() bool {
 	return c.GetHeader("X-Requested-With") == "XMLHttpRequest"
@@ -437,17 +450,26 @@ route param
 */
 
 // Param return the value of the URL param.
+//
+//	request path: /article/{id}
+//	c.Param(id)
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }
 
 // ParamInt  return the value of the URL param
+//
+//	request path: /article/{id}
+//	c.ParamInt(id)
 func (c *Context) ParamInt(key string) (int, error) {
 	v := c.Param(key)
 	return strconv.Atoi(v)
 }
 
 // ParamInt64  return the value of the URL param
+//
+//	request path: /article/{id}
+//	c.ParamInt64(id)
 func (c *Context) ParamInt64(key string) (int64, error) {
 	v := c.Param(key)
 	return strconv.ParseInt(v, 10, 64)
@@ -482,13 +504,18 @@ func (c *Context) formValue(key string) string {
 }
 
 // File response file
+//
 //	support: text image bin ..
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
 // GetString return string
+//
 //	def: default value
+//
+// request url: /article?id=111
+// id:=c.GetString("id")
 func (c *Context) GetString(key string, def ...string) string {
 	if v := c.formValue(key); v != "" {
 		return v
@@ -500,6 +527,8 @@ func (c *Context) GetString(key string, def ...string) string {
 }
 
 // GetStrings return []string
+// request url: /article?id=111&id=456
+// ids:=c.GetStrings("id")
 func (c *Context) GetStrings(key string, def ...[]string) []string {
 	var defaultDef []string
 	if len(def) > 0 {
@@ -515,6 +544,7 @@ func (c *Context) GetStrings(key string, def ...[]string) []string {
 }
 
 // GetInt return int and error
+//
 //	def default value
 func (c *Context) GetInt(key string, def ...int) (int, error) {
 	v := c.formValue(key)
@@ -525,6 +555,7 @@ func (c *Context) GetInt(key string, def ...int) (int, error) {
 }
 
 // GetInt8 return int8 and error
+//
 //	-128~127
 func (c *Context) GetInt8(key string, def ...int8) (int8, error) {
 	v := c.formValue(key)
@@ -535,7 +566,8 @@ func (c *Context) GetInt8(key string, def ...int8) (int8, error) {
 	return int8(i64), err
 }
 
-//GetUint8 return uint8 and error
+// GetUint8 return uint8 and error
+//
 //	0~255
 func (c *Context) GetUint8(key string, def ...uint8) (uint8, error) {
 	v := c.formValue(key)
@@ -547,6 +579,7 @@ func (c *Context) GetUint8(key string, def ...uint8) (uint8, error) {
 }
 
 // GetInt16 return int16 and error
+//
 //	-32768~32767
 func (c *Context) GetInt16(key string, def ...int16) (int16, error) {
 	v := c.formValue(key)
@@ -558,6 +591,7 @@ func (c *Context) GetInt16(key string, def ...int16) (int16, error) {
 }
 
 // GetUint16 return uint16 and error
+//
 //	0~65535
 func (c *Context) GetUint16(key string, def ...uint16) (uint16, error) {
 	v := c.formValue(key)
@@ -569,6 +603,7 @@ func (c *Context) GetUint16(key string, def ...uint16) (uint16, error) {
 }
 
 // GetInt32 return int32 and error
+//
 //	-2147483648~2147483647
 func (c *Context) GetInt32(key string, def ...int32) (int32, error) {
 	v := c.formValue(key)
@@ -580,6 +615,7 @@ func (c *Context) GetInt32(key string, def ...int32) (int32, error) {
 }
 
 // GetUint32 return uint32 and error
+//
 //	0~4294967295
 func (c *Context) GetUint32(key string, def ...uint32) (uint32, error) {
 	v := c.formValue(key)
@@ -591,6 +627,7 @@ func (c *Context) GetUint32(key string, def ...uint32) (uint32, error) {
 }
 
 // GetInt64 return int64 and error
+//
 //	-9223372036854775808~9223372036854775807
 func (c *Context) GetInt64(key string, def ...int64) (int64, error) {
 	v := c.formValue(key)
@@ -601,6 +638,7 @@ func (c *Context) GetInt64(key string, def ...int64) (int64, error) {
 }
 
 // GetUint64 return uint64 and error
+//
 //	0~18446744073709551615
 func (c *Context) GetUint64(key string, def ...uint64) (uint64, error) {
 	v := c.formValue(key)
@@ -639,6 +677,7 @@ func (c *Context) Status(code int) {
 }
 
 // Redirect http redirect
+//
 //	c.Redirect(301,url)
 //	c.Redirect(302,url)
 func (c *Context) Redirect(code int, url string) {
@@ -647,6 +686,7 @@ func (c *Context) Redirect(code int, url string) {
 }
 
 // ServerString response text message
+//
 //	c.ServerString(200,"success")
 //	c.ServerString(404,"page not found")
 func (c *Context) ServerString(code int, msg string) {
@@ -667,6 +707,7 @@ func (c *Context) String(msg string) {
 }
 
 // ServerYAML response yaml data
+//
 //	c.ServerYAML(200,yamlData)
 func (c *Context) ServerYAML(code int, data interface{}) {
 	if code < 0 {
@@ -691,6 +732,7 @@ func (c *Context) YAML(data interface{}) {
 }
 
 // ServerJSON response JSON data
+//
 //	c.ServerJSON(200,"success")
 //	c.ServerJSON(404,structData)
 //	c.ServerJSON(404,mapData)
@@ -710,11 +752,17 @@ func (c *Context) ServerJSON(code int, data interface{}) {
 }
 
 // JSON response JSON data
+//
+//	user:=&User{}
+//	c.JSON(user)
 func (c *Context) JSON(data interface{}) {
 	c.ServerJSON(http.StatusOK, data)
 }
 
 // ServerJSONP write data by jsonp format
+//
+//	user:=&User{}
+//	c.ServerJSONP(200,"callback",user)
 func (c *Context) ServerJSONP(code int, callback string, data interface{}) {
 	if code < 0 {
 		code = http.StatusOK
@@ -758,6 +806,9 @@ func (c *Context) ServerXML(code int, data interface{}) {
 }
 
 // XML  response xml data
+//
+//	user:=&User{}
+//	c.XML(user)
 func (c *Context) XML(data interface{}) {
 	c.ServerXML(http.StatusOK, data)
 }
@@ -860,6 +911,7 @@ func (c *Context) Render(code int, name string, data interface{}) {
 }
 
 // ServerHTML html page render
+//
 //	c.ServerHTML(200,"index.html")
 //	c.ServerHTML(200,"admin/login.html")
 //	c.ServerHTML(404,"error.html")
@@ -878,6 +930,7 @@ func (c *Context) ServerHTML(code int, name string, data ...interface{}) {
 }
 
 // HTML  page render
+//
 //	c.HTML("index.html")
 //	c.HTML("login.html",data)
 func (c *Context) HTML(name string, data ...interface{}) {
@@ -909,6 +962,8 @@ func (c *Context) SetSameSite(samSite http.SameSite) {
 }
 
 // SetCookie set cookie
+//
+//	c.SetCookie("name","zituocn",360,"/","",false,true)
 func (c *Context) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
 	if path == "" {
 		path = "/"
@@ -958,6 +1013,7 @@ func (c *Context) GetFiles(key string) ([]*multipart.FileHeader, error) {
 }
 
 // SaveToFile upload the file and save it on the server.
+//
 //	c.SaveToFile("file","./upload/1.jpg")
 func (c *Context) SaveToFile(fromFile, toFile string) error {
 	file, _, err := c.Request.FormFile(fromFile)
@@ -997,6 +1053,7 @@ func (c *Context) Download(data []byte) {
 }
 
 // DownLoadFile download data to filename
+//
 //	c.DownLoadFile(data,"table.xlsx")
 func (c *Context) DownLoadFile(data []byte, filename string) {
 	c.Header("content-disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))

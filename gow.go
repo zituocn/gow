@@ -8,6 +8,7 @@ sam
 package gow
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/zituocn/logx"
 	"html/template"
@@ -128,6 +129,9 @@ func New() *Engine {
 }
 
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
+//
+//	r:=gow.Default()
+//	r.Run()
 func Default() *Engine {
 	engine := New()
 	engine.Use(Logger(), Recovery())
@@ -136,6 +140,10 @@ func Default() *Engine {
 }
 
 // SetAppConfig set engine config
+//
+//	gow.SetAppConfig(gow.GetAppConfig())
+//	OR:
+//	gow.SetAppConfig(func())
 func (engine *Engine) SetAppConfig(app *AppConfig) {
 	if app != nil {
 		engine.AppName = app.AppName
@@ -156,31 +164,42 @@ func (engine *Engine) ResetRoute() {
 }
 
 // AddFuncMap add fn func to template func map
+//
+//	r.AddFuncMap("datetime",fn())
 func (engine *Engine) AddFuncMap(key string, fn interface{}) {
 	engine.FuncMap[key] = fn
 }
 
 // SetViews set engine.viewPath = path
+//
+//	r.SetViews("views")
 func (engine *Engine) SetViews(path string) {
 	engine.viewsPath = path
 }
 
 // SetGzipOn set gzip on
+//
+//	r.SetGzipOn(true)
 func (engine *Engine) SetGzipOn(on bool) {
 	engine.gzipOn = on
 }
 
 // SetIgnoreCase set ignore case on the route
+//
+//	r.SetIgnoreCase(true)
 func (engine *Engine) SetIgnoreCase(ignore bool) {
 	engine.ignoreCase = ignore
 }
 
 // SetIgnoreTrailingSlash set ignore trailing slash one the route
+//
+//	r.SetIgnoreTrailingSlash(true)
 func (engine *Engine) SetIgnoreTrailingSlash(ignore bool) {
 	engine.ignoreTrailingSlash = ignore
 }
 
 // Run start http service default 127.0.0.1:8080
+//
 //	r.Run()
 //	r.Run(8080)
 //	r.Run(":8080)
@@ -213,6 +232,27 @@ func (engine *Engine) RunTLS(certFile, keyFile string, args ...interface{}) (err
 	address := engine.getAddress(args...)
 	logx.Infof("[%s] [%s] Listening and serving HTTP on https://%s\n", engine.AppName, engine.RunMode, address)
 	err = http.ListenAndServeTLS(address, certFile, keyFile, engine)
+	return
+}
+
+// RunTLSLoadConfig use tls.Config{}
+func (engine *Engine) RunTLSLoadConfig(cfg *tls.Config, args ...interface{}) (err error) {
+	defer func() { logx.Error(err) }()
+	engine.useMiddleware()
+	if engine.AutoRender {
+		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
+	}
+	if engine.RunMode == DevMode {
+		fmt.Printf("%s\n", logo)
+	}
+	address := engine.getAddress(args...)
+	logx.Infof("[%s] [%s] Listening and serving HTTP on https://%s\n", engine.AppName, engine.RunMode, address)
+	server := http.Server{
+		Addr:      address,
+		Handler:   engine,
+		TLSConfig: cfg,
+	}
+	err = server.ListenAndServeTLS("", "")
 	return
 }
 
@@ -302,7 +342,8 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 }
 
 // Use middleware
-//	ex: r.Use(Auth())
+//
+//	r.Use(Auth())
 func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
 	engine.rebuild404Handlers()
@@ -311,6 +352,8 @@ func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 }
 
 // NoRoute set 404 handler
+//
+//	r.NoRoute(error404Handler)
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.noRoute = handlers
 	engine.rebuild404Handlers()

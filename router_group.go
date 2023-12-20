@@ -61,13 +61,26 @@ type RouterGroup struct {
 var _IRouter = &RouterGroup{}
 
 // Use add middleware to the group
+//
+//	func Demo() gow.HandlerFunc{
+//		return func(c *Context) {
+//			TODO:
+//			c.Next()
+//		}
+//	}
+//
+// r.Use(Demo())
+// OR:
+// r.Use(Demo(),Demo2())
 func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
 	group.Handlers = append(group.Handlers, middleware...)
 	return group.returnObj()
 }
 
 // Group create a new route group.
+//
 //	v1:=r.Group("/v1")
+//	THEN:
 //	v1.GET("/user",...)
 func (group *RouterGroup) Group(path string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
@@ -78,8 +91,10 @@ func (group *RouterGroup) Group(path string, handlers ...HandlerFunc) *RouterGro
 }
 
 // Handle registers a new request handle and middleware with the given path and method
+//
 //	r.Handle("GET","/",handler)
-//	r.Handler("GET,POST","/",handler)
+//	r.Handle("GET,POST","/",handler)
+//	r.Handle("GET,POST,PUT,DELETE","/article/{id}",handler)
 func (group *RouterGroup) Handle(method, path string, handlers ...HandlerFunc) IRoutes {
 	methods := strings.Split(method, ",")
 	for _, m := range methods {
@@ -89,18 +104,27 @@ func (group *RouterGroup) Handle(method, path string, handlers ...HandlerFunc) I
 }
 
 // GET register GET handler
+//
+//	r.GET("/",handler)
+//	r.GET("/article/{id}.html",handler)
 func (group *RouterGroup) GET(path string, handlers ...HandlerFunc) IRoutes {
 	group.handle(http.MethodGet, path, handlers)
 	return group.returnObj()
 }
 
 // POST register POST handler
+//
+//	r.POST("/",handler)
+//	r.POST("/article/{id}.html",handler)
 func (group *RouterGroup) POST(path string, handlers ...HandlerFunc) IRoutes {
 	group.handle(http.MethodPost, path, handlers)
 	return group.returnObj()
 }
 
 // DELETE register DELETE handler
+//
+//	r.DELETE("/",handler)
+//	r.DELETE("/article/{id}",handler)
 func (group *RouterGroup) DELETE(path string, handlers ...HandlerFunc) IRoutes {
 	group.handle(http.MethodDelete, path, handlers)
 	return group.returnObj()
@@ -119,18 +143,27 @@ func (group *RouterGroup) PUT(path string, handlers ...HandlerFunc) IRoutes {
 }
 
 // OPTIONS register OPTIONS handler
+//
+//	r.OPTIONS("/",handler)
+//	r.OPTIONS("/article/{id}",handler)
 func (group *RouterGroup) OPTIONS(path string, handlers ...HandlerFunc) IRoutes {
 	group.handle(http.MethodOptions, path, handlers)
 	return group.returnObj()
 }
 
 // HEAD register HEAD handler
+//
+//	r.HEAD("/",handler)
+//	r.HEAD("/article/{id}",handler)
 func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) IRoutes {
 	group.handle(http.MethodHead, path, handlers)
 	return group.returnObj()
 }
 
 // Any register all HTTP methods.
+//
+//	r.Aay("/",handler)
+//	r.Aay("/article/{id}.html",handler)
 func (group *RouterGroup) Any(path string, handlers ...HandlerFunc) IRoutes {
 	group.handle(http.MethodGet, path, handlers)
 	group.handle(http.MethodPost, path, handlers)
@@ -167,6 +200,7 @@ func (group *RouterGroup) handle(method, path string, handlers HandlersChain) {
 }
 
 // Static handler static dir
+//
 //	r.Static("/static","static")
 func (group *RouterGroup) Static(path, root string) IRoutes {
 	return group.StaticFS(path, Dir(root, false))
@@ -210,6 +244,7 @@ func (group *RouterGroup) createStaticHandler(path string, fs http.FileSystem) H
 }
 
 // StaticFile static file
+//
 //	r.StaticFile("/favicon.png","/static/img/favicon.png")
 func (group *RouterGroup) StaticFile(path, filepath string) IRoutes {
 	if strings.Contains(path, ":") || strings.Contains(path, "*") {
