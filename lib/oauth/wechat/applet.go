@@ -1,7 +1,7 @@
 /*
 微信小程序
 
- */
+*/
 
 package wechat
 
@@ -26,6 +26,9 @@ const (
 
 	//用户支付完成后，获取该用户的UnionId
 	getPaidUnionidUrl = "https://api.weixin.qq.com/wxa/getpaidunionid?access_token=%s&openid=%s"
+
+	//用code换手机号
+	getPhoneNumber = "https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=%s"
 )
 
 // WxAppletSessionData 微信小程序
@@ -73,6 +76,23 @@ type WxAppletPhoneInfo struct {
 	} `json:"watermark"`
 }
 
+// WxAppletGetUserPhoneNumberResp 新版本新方法 获取微信用户电话号码
+type WxAppletGetUserPhoneNumberResp struct {
+	ErrCode   int        `json:"errcode"`
+	ErrMsg    string     `json:"errmsg"`
+	PhoneInfo *PhoneInfo `json:"phone_info"`
+}
+
+type PhoneInfo struct {
+	PhoneNumber     string `json:"phoneNumber"`     //用户绑定的手机号（国外手机号会有区号）
+	PurePhoneNumber string `json:"purePhoneNumber"` //没有区号的手机号
+	CountryCode     string `json:"countryCode"`     //区号
+	Watermark       struct {
+		Timestamp int64  `json:"timestamp"`
+		AppID     string `json:"appid"`
+	} `json:"watermark"`
+}
+
 // AppletClient  Client
 type AppletClient struct {
 	AppId  string
@@ -100,7 +120,6 @@ func (c *AppletClient) CodeToSession(code string) (sessionData *WxAppletSessionD
 	if err != nil {
 		return
 	}
-	fmt.Println("resp:::", resp)
 	sessionData = new(WxAppletSessionData)
 	err = resp.ToJSON(&sessionData)
 	if err != nil {
@@ -129,6 +148,32 @@ func (c *AppletClient) GetAccessToken() (accessTokenData *WxAppletAccessToken, e
 	if accessTokenData.ErrCode != 0 {
 		err = fmt.Errorf("[wechat]获取code出错 %v", accessTokenData.ErrMsg)
 		return
+	}
+	return
+}
+
+type CodeReq struct {
+	Code string `json:"code"`
+}
+
+func (c *AppletClient) GetUserPhoneNumber(accessToken, code string) (phoneNumber string, err error) {
+	url := fmt.Sprintf(getPhoneNumber, accessToken)
+	req.SetTimeout(10 * time.Second)
+	resp, err := req.Post(url, req.BodyJSON(&CodeReq{Code: code}))
+	if err != nil {
+		return
+	}
+	ret := new(WxAppletGetUserPhoneNumberResp)
+	err = resp.ToJSON(&ret)
+	if err != nil {
+		return
+	}
+	if ret.ErrCode != 0 {
+		err = fmt.Errorf("[applet]通过code获取用户电话号码出错 %v", ret.ErrMsg)
+		return
+	}
+	if ret.PhoneInfo != nil {
+		phoneNumber = ret.PhoneInfo.PhoneNumber
 	}
 	return
 }
