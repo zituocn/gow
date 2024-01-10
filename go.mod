@@ -28,7 +28,7 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/redis/go-redis/v9 v9.0.5
 	github.com/tideland/golib v4.24.2+incompatible // indirect
-	github.com/zituocn/logx v0.0.2
+	github.com/zituocn/logx v0.0.5
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gorm v1.25.2-0.20230530020048-26663ab9bf55
 )
