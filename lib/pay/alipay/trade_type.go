@@ -2,7 +2,7 @@ package alipay
 
 import "encoding/json"
 
-//TradePay TradePay
+// TradePay TradePay
 type TradePay struct {
 	NotifyURL string `json:"-"`
 	ReturnURL string `json:"-"`
@@ -42,12 +42,12 @@ type TradePagePay struct {
 	QRCodeWidth string `json:"qrcode_width,omitempty"` // 商户自定义二维码宽度 注：qr_pay_mode=4时该参数生效
 }
 
-//APIName APIName
+// APIName APIName
 func (t TradePagePay) APIName() string {
 	return "alipay.trade.page.pay"
 }
 
-//Params Params
+// Params Params
 func (t TradePagePay) Params() map[string]string {
 	var m = make(map[string]string)
 	m["notify_url"] = t.NotifyURL
@@ -55,12 +55,12 @@ func (t TradePagePay) Params() map[string]string {
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t TradePagePay) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t TradePagePay) ExtJSONParamValue() string {
 	var bytes, err = json.Marshal(t)
 	if err != nil {
@@ -86,29 +86,29 @@ type TradeQuery struct {
 	TradeNo      string `json:"trade_no,omitempty"`     // 支付宝交易号
 }
 
-//APIName APIName
+// APIName APIName
 func (t TradeQuery) APIName() string {
 	return "alipay.trade.query"
 }
 
-//Params Params
+// Params Params
 func (t TradeQuery) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t TradeQuery) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t TradeQuery) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//TradeQueryResponse 订单查询返回信息
+// TradeQueryResponse 订单查询返回信息
 type TradeQueryResponse struct {
 	AliPayTradeQuery struct {
 		Code             string `json:"code"`
@@ -127,7 +127,7 @@ type TradeQueryResponse struct {
 		SendPayDate      string `json:"send_pay_date"`       // 本次交易打款给卖家的时间
 		TotalAmount      string `json:"total_amount"`        // 交易的订单金额
 		TradeNo          string `json:"trade_no"`            // 支付宝交易号
-		TradeStatus      string `json:"trade_status"`        // 交易状态
+		TradeStatus      string `json:"trade_status"`        // 交易状态 WAIT_BUYER_PAY（交易创建，等待买家付款），RADE_CLOSED（未付款交易超时关闭，或支付完成后全额退款），TRADE_SUCCESS（交易支付成功），TRADE_FINISHED（交易结束，不可退款）
 
 		DiscountAmount      string          `json:"discount_amount"`               // 平台优惠金额
 		FundBillList        []FundBill      `json:"fund_bill_list,omitempty"`      // 交易支付使用的资金渠道
@@ -149,14 +149,14 @@ type TradeQueryResponse struct {
 	Sign string `json:"sign"`
 }
 
-//FundBill FundBill
+// FundBill FundBill
 type FundBill struct {
 	FundChannel string  `json:"fund_channel"`       // 交易使用的资金渠道，详见 支付渠道列表
 	Amount      string  `json:"amount"`             // 该支付工具类型所使用的金额
 	RealAmount  float64 `json:"real_amount,string"` // 渠道实际付款金额
 }
 
-//VoucherDetail VoucherDetail
+// VoucherDetail VoucherDetail
 type VoucherDetail struct {
 	ID                 string `json:"id"`                  // 券id
 	Name               string `json:"name"`                // 券名称
@@ -167,7 +167,7 @@ type VoucherDetail struct {
 	Memo               string `json:"memo"`                // 优惠券备注信息
 }
 
-//IsSuccess IsSuccess
+// IsSuccess IsSuccess
 func (t *TradeQueryResponse) IsSuccess() bool {
 	if t.AliPayTradeQuery.Code == K_SUCCESS_CODE {
 		return true
@@ -192,7 +192,7 @@ func (t TradeClose) APIName() string {
 	return "alipay.trade.close"
 }
 
-//Params Params
+// Params Params
 func (t TradeClose) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
@@ -200,17 +200,17 @@ func (t TradeClose) Params() map[string]string {
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t TradeClose) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t TradeClose) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//TradeCloseResponse TradeCloseResponse
+// TradeCloseResponse TradeCloseResponse
 type TradeCloseResponse struct {
 	AliPayTradeClose struct {
 		Code       string `json:"code"`
@@ -239,29 +239,29 @@ type TradeRefund struct {
 	TerminalID   string `json:"terminal_id"`            // 可选 商户的终端编号
 }
 
-//APIName APIName
+// APIName APIName
 func (t TradeRefund) APIName() string {
 	return "alipay.trade.refund"
 }
 
-//Params Params
+// Params Params
 func (t TradeRefund) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t TradeRefund) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t TradeRefund) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//TradeRefundResponse TradeRefundResponse
+// TradeRefundResponse TradeRefundResponse
 type TradeRefundResponse struct {
 	AliPayTradeRefund struct {
 		Code                 string             `json:"code"`
@@ -281,7 +281,7 @@ type TradeRefundResponse struct {
 	Sign string `json:"sign"`
 }
 
-//IsSuccess IsSuccess
+// IsSuccess IsSuccess
 func (t *TradeRefundResponse) IsSuccess() bool {
 	if t.AliPayTradeRefund.Code == K_SUCCESS_CODE {
 		return true
@@ -289,7 +289,7 @@ func (t *TradeRefundResponse) IsSuccess() bool {
 	return false
 }
 
-//RefundDetailItem RefundDetailItem
+// RefundDetailItem RefundDetailItem
 type RefundDetailItem struct {
 	FundChannel string `json:"fund_channel"` // 交易使用的资金渠道，详见 支付渠道列表
 	Amount      string `json:"amount"`       // 该支付工具类型所使用的金额
@@ -307,29 +307,29 @@ type FastpayTradeRefundQuery struct {
 	OutRequestNo string `json:"out_request_no"`         // 必须 请求退款接口时，传入的退款请求号，如果在退款请求时未传入，则该值为创建交易时的外部交易号
 }
 
-//APIName APIName
+// APIName APIName
 func (t FastpayTradeRefundQuery) APIName() string {
 	return "alipay.trade.fastpay.refund.query"
 }
 
-//Params Params
+// Params Params
 func (t FastpayTradeRefundQuery) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t FastpayTradeRefundQuery) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t FastpayTradeRefundQuery) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//FastpayTradeRefundQueryResponse FastpayTradeRefundQueryResponse
+// FastpayTradeRefundQueryResponse FastpayTradeRefundQueryResponse
 type FastpayTradeRefundQueryResponse struct {
 	AliPayTradeFastpayRefundQueryResponse struct {
 		Code         string `json:"code"`
@@ -357,7 +357,7 @@ func (t *FastpayTradeRefundQueryResponse) IsSuccess() bool {
 
 //=======================================================================================================
 
-//TradeOrderSettle 统一收单交易结算接口
+// TradeOrderSettle 统一收单交易结算接口
 // https://docs.open.alipay.com/api_1/alipay.trade.order.settle
 type TradeOrderSettle struct {
 	AppAuthToken      string             `json:"-"`                  // 可选
@@ -367,12 +367,12 @@ type TradeOrderSettle struct {
 	OperatorID        string             `json:"operator_id"`        //可选 操作员id
 }
 
-//APIName APIName
+// APIName APIName
 func (t TradeOrderSettle) APIName() string {
 	return "alipay.trade.order.settle"
 }
 
-//Params Params
+// Params Params
 func (t TradeOrderSettle) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
@@ -384,12 +384,12 @@ func (t TradeOrderSettle) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t TradeOrderSettle) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//RoyaltyParameter RoyaltyParameter
+// RoyaltyParameter RoyaltyParameter
 type RoyaltyParameter struct {
 	TransOut         string  `json:"trans_out"`         // 可选 分账支出方账户，类型为userId，本参数为要分账的支付宝账号对应的支付宝唯一用户号。以2088开头的纯16位数字。
 	TransIn          string  `json:"trans_in"`          // 可选 分账收入方账户，类型为userId，本参数为要分账的支付宝账号对应的支付宝唯一用户号。以2088开头的纯16位数字。
@@ -398,7 +398,7 @@ type RoyaltyParameter struct {
 	Desc             string  `json:"desc"`              // 可选 分账描述
 }
 
-//TradeOrderSettleResponse TradeOrderSettleResponse
+// TradeOrderSettleResponse TradeOrderSettleResponse
 type TradeOrderSettleResponse struct {
 	Body struct {
 		Code    string `json:"code"`
@@ -424,12 +424,12 @@ type TradeCreate struct {
 	TerminalID         string            `json:"terminal_id"`
 }
 
-//APIName APIName
+// APIName APIName
 func (t TradeCreate) APIName() string {
 	return "alipay.trade.create"
 }
 
-//Params Params
+// Params Params
 func (t TradeCreate) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
@@ -437,17 +437,17 @@ func (t TradeCreate) Params() map[string]string {
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t TradeCreate) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t TradeCreate) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//TradeCreateResponse TradeCreateResponse
+// TradeCreateResponse TradeCreateResponse
 type TradeCreateResponse struct {
 	AliPayTradeCreateResponse struct {
 		Code       string `json:"code"`
@@ -460,7 +460,7 @@ type TradeCreateResponse struct {
 	Sign string `json:"sign"`
 }
 
-//ExtendParamsItem ExtendParamsItem
+// ExtendParamsItem ExtendParamsItem
 type ExtendParamsItem struct {
 	SysServiceProviderID string `json:"sys_service_provider_id"`
 	HbFqNum              string `json:"hb_fq_num"`
@@ -468,13 +468,13 @@ type ExtendParamsItem struct {
 	TimeoutExpress       string `json:"timeout_express"`
 }
 
-//RoyaltyInfo RoyaltyInfo
+// RoyaltyInfo RoyaltyInfo
 type RoyaltyInfo struct {
 	RoyaltyType       string                  `json:"royalty_type"`
 	RoyaltyDetailInfo []RoyaltyDetailInfoItem `json:"royalty_detail_infos,omitempty"`
 }
 
-//RoyaltyDetailInfoItem RoyaltyDetailInfoItem
+// RoyaltyDetailInfoItem RoyaltyDetailInfoItem
 type RoyaltyDetailInfoItem struct {
 	SerialNo         string `json:"serial_no"`
 	TransInType      string `json:"trans_in_type"`
@@ -489,12 +489,12 @@ type RoyaltyDetailInfoItem struct {
 	AliPayStoreID    string `json:"alipay_store_id"`
 }
 
-//SubMerchantItem SubMerchantItem
+// SubMerchantItem SubMerchantItem
 type SubMerchantItem struct {
 	MerchantID string `json:"merchant_id"`
 }
 
-//GoodsDetailItem GoodsDetailItem
+// GoodsDetailItem GoodsDetailItem
 type GoodsDetailItem struct {
 	GoodsID       string `json:"goods_id"`
 	AliPayGoodsID string `json:"alipay_goods_id"`
@@ -528,12 +528,12 @@ type AliPayTradePay struct {
 	TerminalParams     string            `json:"terminal_params,omitempty"`
 }
 
-//APIName APIName
+// APIName APIName
 func (t AliPayTradePay) APIName() string {
 	return "alipay.trade.pay"
 }
 
-//Params Params
+// Params Params
 func (t AliPayTradePay) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
@@ -541,17 +541,17 @@ func (t AliPayTradePay) Params() map[string]string {
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t AliPayTradePay) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t AliPayTradePay) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//AliPayTradePayResponse AliPayTradePayResponse
+// AliPayTradePayResponse AliPayTradePayResponse
 type AliPayTradePayResponse struct {
 	AliPayTradePay struct {
 		Code                string          `json:"code"`
@@ -577,7 +577,7 @@ type AliPayTradePayResponse struct {
 	Sign string `json:"sign"`
 }
 
-//IsSuccess IsSuccess
+// IsSuccess IsSuccess
 func (t *AliPayTradePayResponse) IsSuccess() bool {
 	if t.AliPayTradePay.Code == K_SUCCESS_CODE {
 		return true
@@ -594,31 +594,31 @@ type TradeAppPay struct {
 	TimeExpire string `json:"time_expire,omitempty"` // 绝对超时时间，格式为yyyy-MM-dd HH:mm。
 }
 
-//APIName APIName
+// APIName APIName
 func (t TradeAppPay) APIName() string {
 	return "alipay.trade.app.pay"
 }
 
-//Params Params
+// Params Params
 func (t TradeAppPay) Params() map[string]string {
 	var m = make(map[string]string)
 	m["notify_url"] = t.NotifyURL
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t TradeAppPay) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t TradeAppPay) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
 //=======================================================================================================
 
-//TradePreCreate  (统一收单线下交易预创建
+// TradePreCreate  (统一收单线下交易预创建
 // https://docs.open.alipay.com/api_1/alipay.trade.precreate/
 type TradePreCreate struct {
 	TradePay
@@ -629,12 +629,12 @@ type TradePreCreate struct {
 	TerminalID         string            `json:"terminal_id"`            // 可选 商户机具终端编号
 }
 
-//APIName APIName
+// APIName APIName
 func (t TradePreCreate) APIName() string {
 	return "alipay.trade.precreate"
 }
 
-//Params Params
+// Params Params
 func (t TradePreCreate) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
@@ -642,7 +642,7 @@ func (t TradePreCreate) Params() map[string]string {
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t TradePreCreate) ExtJSONParamName() string {
 	return "biz_content"
 }
@@ -652,7 +652,7 @@ func (t TradePreCreate) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//TradePreCreateResponse TradePreCreateResponse
+// TradePreCreateResponse TradePreCreateResponse
 type TradePreCreateResponse struct {
 	AliPayPreCreateResponse struct {
 		Code       string `json:"code"`
@@ -665,7 +665,7 @@ type TradePreCreateResponse struct {
 	Sign string `json:"sign"`
 }
 
-//IsSuccess IsSuccess
+// IsSuccess IsSuccess
 func (t *TradePreCreateResponse) IsSuccess() bool {
 	if t.AliPayPreCreateResponse.Code == K_SUCCESS_CODE {
 		return true
@@ -685,12 +685,12 @@ type TradeCancel struct {
 	TradeNo    string `json:"trade_no"`     // 支付宝交易号，和商户订单号不能同时为空
 }
 
-//APIName APIName
+// APIName APIName
 func (t TradeCancel) APIName() string {
 	return "alipay.trade.cancel"
 }
 
-//Params Params
+// Params Params
 func (t TradeCancel) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
@@ -698,17 +698,17 @@ func (t TradeCancel) Params() map[string]string {
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t TradeCancel) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t TradeCancel) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//TradeCancelResponse TradeCancelResponse
+// TradeCancelResponse TradeCancelResponse
 type TradeCancelResponse struct {
 	AliPayTradeCancelResponse struct {
 		Code       string `json:"code"`
@@ -723,7 +723,7 @@ type TradeCancelResponse struct {
 	Sign string `json:"sign"`
 }
 
-//IsSuccess IsSuccess
+// IsSuccess IsSuccess
 func (t *TradeCancelResponse) IsSuccess() bool {
 	if t.AliPayTradeCancelResponse.Code == K_SUCCESS_CODE {
 		return true
@@ -743,29 +743,29 @@ type TradeOrderInfoSync struct {
 	OrderBizInfo string `json:"order_biz_info"` // 可选 商户传入同步信息，具体值要和支付宝约定；用于芝麻信用租车、单次授权等信息同步场景，格式为json格式
 }
 
-//APIName APIName
+// APIName APIName
 func (t TradeOrderInfoSync) APIName() string {
 	return "alipay.trade.orderinfo.sync"
 }
 
-//Params Params
+// Params Params
 func (t TradeOrderInfoSync) Params() map[string]string {
 	var m = make(map[string]string)
 	m["app_auth_token"] = t.AppAuthToken
 	return m
 }
 
-//ExtJSONParamName ExtJSONParamName
+// ExtJSONParamName ExtJSONParamName
 func (t TradeOrderInfoSync) ExtJSONParamName() string {
 	return "biz_content"
 }
 
-//ExtJSONParamValue ExtJSONParamValue
+// ExtJSONParamValue ExtJSONParamValue
 func (t TradeOrderInfoSync) ExtJSONParamValue() string {
 	return marshal(t)
 }
 
-//TradeOrderInfoSyncResponse TradeOrderInfoSyncResponse
+// TradeOrderInfoSyncResponse TradeOrderInfoSyncResponse
 type TradeOrderInfoSyncResponse struct {
 	Body struct {
 		Code        string `json:"code"`
