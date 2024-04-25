@@ -193,7 +193,7 @@ func (group *RouterGroup) handle(method, path string, handlers HandlersChain) {
 	absolutePath := group.calculateAbsolutePath(path)
 	var match matchValue
 	if group.engine.Match(method, absolutePath, &match) {
-		panic("method: " + method + " path: " + absolutePath + path + " has been defined")
+		panic("method: " + method + " path: " + absolutePath + " has been defined")
 	}
 	handlers = group.combineHandlers(handlers)
 	group.engine.addRoute(method, absolutePath, handlers)
