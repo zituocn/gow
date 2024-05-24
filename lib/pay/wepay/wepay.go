@@ -7,11 +7,11 @@ sam
 package wepay
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/zituocn/gow/lib/util"
 	"github.com/zituocn/logx"
-
 	"net/http"
 	"strings"
 	"time"
@@ -46,7 +46,12 @@ func (m *WxAPI) UnifiedOrder(body string, outTradeNo string, totalFee int, openI
 	params.SetString("openid", openID)
 	params.SetString("trade_type", string(tradeType))
 	params.SetString("notify_url", m.Client.NotifyURL)
-
+	if m.Client.IsProfitSharing {
+		//不传默认为不分账
+		//分账传Y，不分账传N
+		logx.Errorf("=====统一下单的时候标注了需要分账=======")
+		params.SetString("profit_sharing", "Y")
+	}
 	//订单的有效期，开始和结束时间
 	now := time.Now()
 	params.SetString("time_start", util.TimeFormat(now, "YYYYMMDDHHmmss"))
@@ -257,6 +262,371 @@ func (m *WxAPI) OrderQuery(transactionID, outTradeNo string) (state bool, tradeS
 		tradeState = "OTHER"
 	}
 
+	return
+}
+
+// ProfitSharing 请求单次分账
+// outOrderNo 商户分账单号
+// 单次分账请求按照传入的分账接收方账号和资金进行分账，同时会将订单剩余的待分账金额解冻给本商户。故操作成功后，订单不能再进行分账，也不能进行分账完结
+func (m *WxAPI) ProfitSharing(transactionID, outOrderNo string, receiver []*ProfitSharingReceiverReq) (ret *ProfitSharingResp, errCode string, err error) {
+	if transactionID == "" {
+		err = fmt.Errorf("[transactionID]不能为空")
+		return
+	}
+	if outOrderNo == "" {
+		err = fmt.Errorf("[outOrderNo]不能为空")
+		return
+	}
+	params := make(Params)
+	params.SetString("transaction_id", transactionID)
+	params.SetString("out_order_no", outOrderNo)
+	for _, item := range receiver {
+		if item.Type == "" || item.Account == "" || item.Amount == 0 || item.Description == "" {
+			err = fmt.Errorf("接收方信息不完整")
+			return
+		}
+	}
+	b, err := json.Marshal(receiver)
+	if err != nil {
+		err = fmt.Errorf("接收方信息格式错误")
+		return
+	}
+	params.SetString("receivers", string(b))
+	//logx.Errorf("【请求单次分账】请求参数 receivers：%v", string(b))
+	params, err = m.Client.ProfitSharing(params)
+	if err != nil {
+		return
+	}
+	if params.GetString("return_code") == "SUCCESS" {
+		if params.GetString("result_code") == "SUCCESS" {
+			//分账申请接收成功，结果通过分账查询接口查询
+			transactionID = params.GetString("transaction_id")
+			outOrderNo = params.GetString("out_order_no")
+			orderId := params.GetString("order_id") //微信分账单号
+			status := params.GetString("status")    //分账单状态:PROCESSING：处理中,FINISHED：处理完成
+			receiverResp := params.GetString("receivers")
+			//logx.Errorf("【请求单次分账】返回的数据：transactionID:%v,outOrderNo:%v,orderId:%v,status:%v", transactionID, outOrderNo, orderId, status)
+			//logx.Errorf("【请求单次分账】返回的接收方数据：%v", receiverResp)
+			receiverData := make([]*ProfitSharingReceiverData, 0)
+			err = json.Unmarshal([]byte(receiverResp), &receiverData)
+			if err != nil {
+				logx.Errorf("json解析分账响应接收方参数出错：%v", err)
+			}
+			//for _, item := range receiverData {
+			//	logx.Errorf("【请求单次分账】接收方信息：type:%v,account:%v,amount:%v,desc:%v,result:%v,detailId:%v,finishTime:%v,failReason:%v", item.Type, item.Account, item.Amount, item.Description, item.Result, item.DetailId, item.FinishTime, item.FailReason)
+			//}
+			ret = new(ProfitSharingResp)
+			ret.Status = status
+			ret.OrderId = orderId
+			ret.Receivers = receiverData
+			ret.TransactionId = transactionID
+			ret.OutOrderNo = outOrderNo
+		}
+		if params.GetString("err_code") != "" {
+			logx.Errorf(fmt.Sprintf("【请求单次分账】提交业务失败：错误码：%v,错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des")))
+			err = errors.New(params.GetString("err_code_des"))
+			errCode = params.GetString("err_code")
+		}
+	} else {
+		logx.Errorf("【请求单次分账】通信失败：%v", params.GetString("return_msg"))
+	}
+	return
+}
+
+// MultiProfitSharing 请求多次分账
+// 多次分账请求仅会按照传入的分账接收方进行分账，不会对剩余的金额进行任何操作。故操作成功后，在待分账金额不等于零时，订单依旧能够再次进行分账。
+// 调用多次分账接口后，需要解冻剩余资金时，调用[完结分账]的接口将剩余的分账金额全部解冻给本商户
+func (m *WxAPI) MultiProfitSharing(transactionID, outOrderNo string, receiver []*ProfitSharingReceiverReq) (ret *ProfitSharingResp, err error) {
+	if transactionID == "" {
+		err = fmt.Errorf("[transactionID]不能为空")
+		return
+	}
+	if outOrderNo == "" {
+		err = fmt.Errorf("[outOrderNo]不能为空")
+		return
+	}
+	params := make(Params)
+	params.SetString("transaction_id", transactionID)
+	params.SetString("out_order_no", outOrderNo)
+	for _, item := range receiver {
+		if item.Type == "" || item.Account == "" || item.Amount == 0 || item.Description == "" {
+			err = fmt.Errorf("接收方信息不完整")
+			return
+		}
+	}
+	b, err := json.Marshal(receiver)
+	if err != nil {
+		err = fmt.Errorf("接收方信息格式错误")
+		return
+	}
+	params.SetString("receivers", string(b))
+	//logx.Errorf("【请求多次分账】请求参数 receivers：%v", string(b))
+	params, err = m.Client.MultiProfitSharing(params)
+	if err != nil {
+		return
+	}
+	if params.GetString("return_code") == "SUCCESS" {
+		if params.GetString("result_code") == "SUCCESS" {
+			//分账申请接收成功，结果通过分账查询接口查询
+			transactionID = params.GetString("transaction_id")
+			outOrderNo = params.GetString("out_order_no")
+			orderId := params.GetString("order_id") //微信分账单号
+			status := params.GetString("status")    //分账单状态:PROCESSING：处理中,FINISHED：处理完成
+			receiverResp := params.GetString("receivers")
+			//logx.Errorf("【请求多次分账】返回的数据：transactionID:%v,outOrderNo:%v,orderId:%v,status:%v", transactionID, outOrderNo, orderId, status)
+			//logx.Errorf("【请求多次分账】返回的接收方数据：%v", receiverResp)
+			receiverData := make([]*ProfitSharingReceiverData, 0)
+			err = json.Unmarshal([]byte(receiverResp), &receiverData)
+			if err != nil {
+				logx.Errorf("json解析分账响应接收方参数出错：%v", err)
+			}
+			//for _, item := range receiverData {
+			//	logx.Errorf("【请求多次分账】接收方信息：type:%v,account:%v,amount:%v,desc:%v,result:%v,detailId:%v,finishTime:%v,failReason:%v", item.Type, item.Account, item.Amount, item.Description, item.Result, item.DetailId, item.FinishTime, item.FailReason)
+			//}
+			ret = new(ProfitSharingResp)
+			ret.Status = status
+			ret.OrderId = orderId
+			ret.Receivers = receiverData
+			ret.TransactionId = transactionID
+			ret.OutOrderNo = outOrderNo
+		}
+		if params.GetString("err_code") != "" {
+			logx.Errorf(fmt.Sprintf("【请求多次分账】提交业务失败：错误码：%v,错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des")))
+			err = errors.New(params.GetString("err_code_des"))
+		}
+	} else {
+		logx.Errorf("【请求多次分账】通信失败：%v", params.GetString("return_msg"))
+	}
+	return
+}
+
+// ProfitSharingQuery 查询分账结果
+func (m *WxAPI) ProfitSharingQuery(transactionID, outOrderNo string) (ret *ProfitSharingQueryResp, err error) {
+	if transactionID == "" {
+		err = fmt.Errorf("[transactionID]不能为空")
+		return
+	}
+	if outOrderNo == "" {
+		err = fmt.Errorf("[outOrderNo]不能为空")
+		return
+	}
+	params := make(Params)
+	params.SetString("transaction_id", transactionID)
+	params.SetString("out_order_no", outOrderNo)
+	params, err = m.Client.ProfitSharingQuery(params)
+	if err != nil {
+		return
+	}
+	if params.GetString("return_code") == "SUCCESS" {
+		if params.GetString("result_code") == "SUCCESS" {
+			//分账申请接收成功，结果通过分账查询接口查询
+			transactionID = params.GetString("transaction_id")
+			outOrderNo = params.GetString("out_order_no")
+			orderId := params.GetString("order_id") //微信分账单号
+			status := params.GetString("status")    //分账单状态:PROCESSING：处理中,FINISHED：处理完成
+			receiverResp := params.GetString("receivers")
+			//logx.Errorf("【查询分账结果】返回参数：transactionID：%v，outOrderNo：%v，orderId：%v，status：%v", transactionID, outOrderNo, orderId, status)
+			//logx.Errorf("【查询分账结果】返回的接收方数据：%v", receiverResp)
+			receiverData := make([]*ProfitSharingQueryReceiverData, 0)
+			err = json.Unmarshal([]byte(receiverResp), &receiverData)
+			if err != nil {
+				logx.Errorf("json解析分账响应接收方参数出错：%v", err)
+			}
+			//for _, item := range receiverData {
+			//	logx.Errorf("【查询分账结果】接收方信息：type:%v,account:%v,amount:%v,desc:%v,result:%v,detailId:%v,finishTime:%v,failReason:%v", item.Type, item.Account, item.Amount, item.Description, item.Result, item.DetailId, item.FinishTime, item.FailReason)
+			//}
+			ret = new(ProfitSharingQueryResp)
+			ret.Status = status
+			ret.OrderId = orderId
+			ret.Receivers = receiverData
+			ret.TransactionId = transactionID
+			ret.OutOrderNo = outOrderNo
+		}
+		if params.GetString("err_code") != "" {
+			logx.Errorf(fmt.Sprintf("【查询分账结果】提交业务失败：错误码：%v,错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des")))
+			err = errors.New(params.GetString("err_code_des"))
+		}
+	} else {
+		logx.Errorf("【查询分账结果】通信失败：%v", params.GetString("return_msg"))
+	}
+	return
+}
+
+// ProfitSharingFinish 完结分账
+func (m *WxAPI) ProfitSharingFinish(transactionID, outOrderNo, description string) (ret *ProfitSharingResp, err error) {
+	if transactionID == "" {
+		err = fmt.Errorf("[transactionID]不能为空")
+		return
+	}
+	if outOrderNo == "" {
+		err = fmt.Errorf("[outOrderNo]不能为空")
+		return
+	}
+	if description == "" {
+		err = fmt.Errorf("[description]不能为空")
+		return
+	}
+	params := make(Params)
+	params.SetString("transaction_id", transactionID)
+	params.SetString("out_order_no", outOrderNo)
+	params.SetString("description", description)
+	params, err = m.Client.ProfitSharingFinish(params)
+	if err != nil {
+		return
+	}
+	if params.GetString("return_code") == "SUCCESS" {
+		if params.GetString("result_code") == "SUCCESS" {
+			//分账申请接收成功，结果通过分账查询接口查询
+			transactionID = params.GetString("transaction_id")
+			outOrderNo = params.GetString("out_order_no")
+			//orderId := params.GetString("order_id") //微信分账单号
+			//logx.Errorf("【完结分账】返回的orderId：%v,transactionId:%v,outOrderNo:%v", orderId, transactionID, outOrderNo)
+		}
+		if params.GetString("err_code") != "" {
+			logx.Errorf(fmt.Sprintf("【完结分账】提交业务失败：错误码：%v,错误描述：%v", params.GetString("err_code"), params.GetString("err_code_des")))
+			err = errors.New(params.GetString("err_code_des"))
+		}
+	} else {
+		logx.Errorf("【完结分账】通信失败：%v", params.GetString("return_msg"))
+	}
+	return
+}
+
+// ProfitSharingReturn 分账回退
+// orderId:微信分账单号，outOrderNo:商户分账单号 二选一
+// outReturnNo:商户回退单号
+func (m *WxAPI) ProfitSharingReturn(orderId, outOrderNo string, outReturnNo string, returnAccount string, returnAmount int64, description string) (ret *ProfitSharingReturnRet, err error) {
+	if strings.TrimSpace(orderId) == "" && strings.TrimSpace(outOrderNo) == "" {
+		err = fmt.Errorf("[orderId]和[outOrderNo]不能同时为空")
+		return
+	}
+	if outReturnNo == "" {
+		err = fmt.Errorf("[outReturnNo]不能为空")
+		return
+	}
+	if returnAccount == "" {
+		err = fmt.Errorf("[returnAccount]不能为空")
+		return
+	}
+	if description == "" {
+		err = fmt.Errorf("[description]不能为空")
+		return
+	}
+	if returnAmount <= 0 {
+		err = fmt.Errorf("[returnAmount]不能小于1分")
+		return
+	}
+	params := make(Params)
+	if strings.TrimSpace(orderId) != "" {
+		params.SetString("order_id", orderId)
+	}
+	if strings.TrimSpace(outOrderNo) != "" {
+		params.SetString("out_order_no", outOrderNo)
+	}
+	params.SetString("out_return_no", outReturnNo)
+	params.SetString("return_account_type", "MERCHANT_ID") //回退方账号类型参数：此处暂固定为：MERCHANT_ID
+	params.SetString("return_account", returnAccount)
+	params.SetInt64("return_amount", returnAmount)
+	params.SetString("description", description)
+	params, err = m.Client.ProfitSharingReturn(params)
+	if err != nil {
+		return
+	}
+	if params.GetString("return_code") == "SUCCESS" {
+		logx.Errorf("【分账回退】return_code = success")
+		orderId = params.GetString("order_id")
+		outOrderNo = params.GetString("out_order_no")
+		outReturnNo = params.GetString("out_return_no")
+		returnNo := params.GetString("return_no")
+		returnAccountType := params.GetString("return_account_type")
+		returnAccount = params.GetString("return_account")
+		returnAmount = params.GetInt64("return_amount")
+		description = params.GetString("description")
+		result := params.GetString("result") //回退结果
+		/*
+			回退结果：
+			PROCESSING:处理中
+			SUCCESS:已成功
+			FAILED: 已失败
+			如果返回为处理中，请勿变更商户回退单号，使用相同的参数再次发起分账回退，否则会出现资金风险
+			在处理中状态的回退单如果5天没有成功，会因为超时被设置为已失败
+		*/
+		failReason := params.GetString("fail_reason")
+		finishTime := params.GetString("finish_time")
+		//logx.Errorf("【分账回退】returnNo:%v,result:%v,finishTime:%v", returnNo, result, finishTime)
+		ret = &ProfitSharingReturnRet{
+			OrderId:           orderId,
+			OutOrderNo:        outOrderNo,
+			OutReturnNo:       outReturnNo,
+			ReturnNo:          returnNo,
+			ReturnAccountType: returnAccountType,
+			ReturnAccount:     returnAccount,
+			ReturnAmount:      returnAmount,
+			Description:       description,
+			Result:            result,
+			FailReason:        failReason,
+			FinishTime:        finishTime,
+		}
+	} else {
+		logx.Errorf("【分账回退】处理失败：错误码：%v，错误信息：%v", params.GetString("error_code"), params.GetString("error_msg"))
+	}
+	return
+}
+
+// ProfitSharingReturnQuery 查询回退结果
+// orderId:微信分账单号，outOrderNo:商户分账单号 二选一
+// outReturnNo:商户回退单号
+func (m *WxAPI) ProfitSharingReturnQuery(orderId, outOrderNo string, outReturnNo string) (ret *ProfitSharingReturnRet, err error) {
+	if strings.TrimSpace(orderId) == "" && strings.TrimSpace(outOrderNo) == "" {
+		err = fmt.Errorf("[orderId]和[outOrderNo]不能同时为空")
+		return
+	}
+	if outReturnNo == "" {
+		err = fmt.Errorf("[outReturnNo]不能为空")
+		return
+	}
+	params := make(Params)
+	if strings.TrimSpace(orderId) != "" {
+		params.SetString("order_id", orderId)
+	}
+	if strings.TrimSpace(outOrderNo) != "" {
+		params.SetString("out_order_no", outOrderNo)
+	}
+	params.SetString("out_return_no", outReturnNo)
+	params, err = m.Client.ProfitSharingReturnQuery(params)
+	if err != nil {
+		return
+	}
+	if params.GetString("return_code") == "SUCCESS" {
+		logx.Errorf("【分账回退结果查询】return_code = success")
+		orderId = params.GetString("order_id")
+		outOrderNo = params.GetString("out_order_no")
+		outReturnNo = params.GetString("out_return_no")
+		returnNo := params.GetString("return_no")
+		returnAccountType := params.GetString("return_account_type")
+		returnAccount := params.GetString("return_account")
+		returnAmount := params.GetInt64("return_amount")
+		description := params.GetString("description")
+		result := params.GetString("result")
+		failReason := params.GetString("fail_reason")
+		finishTime := params.GetString("finish_time")
+		//logx.Errorf("【分账回退结果查询】returnNo:%v,result:%v,finishTime:%v", returnNo, result, finishTime)
+		ret = &ProfitSharingReturnRet{
+			OrderId:           orderId,
+			OutOrderNo:        outOrderNo,
+			OutReturnNo:       outReturnNo,
+			ReturnNo:          returnNo,
+			ReturnAccountType: returnAccountType,
+			ReturnAccount:     returnAccount,
+			ReturnAmount:      returnAmount,
+			Description:       description,
+			Result:            result,
+			FailReason:        failReason,
+			FinishTime:        finishTime,
+		}
+	} else {
+		logx.Errorf("【分账回退结果查询】处理失败：错误码：%v，错误信息：%v", params.GetString("error_code"), params.GetString("error_msg"))
+	}
 	return
 }
 

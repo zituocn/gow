@@ -42,14 +42,17 @@ func (c *Client) SetHTTPReadTimeoutMs(ms int) {
 	c.httpReadTimeout = ms
 }
 
-//SetSignType SetSignType
+// SetSignType SetSignType
 func (c *Client) SetSignType(signType string) {
 	c.signType = signType
 }
 
 // fillRequestData 向 params 中添加 appid、mch_id、nonce_str、sign_type、sign
-func (c *Client) fillRequestData(params Params) Params {
-	params["appid"] = c.AppId
+func (c *Client) fillRequestData(params Params, url string) Params {
+	if url != ProfitSharingQueryUrl {
+		//接口【查询分账结果】不需要参数appid，不能传，经过测试，多传之后会报签名校验错误 SIGN_ERROR
+		params["appid"] = c.AppId
+	}
 	params["mch_id"] = c.MchId
 	params["nonce_str"] = makeNonceStr(20)
 	params["sign_type"] = c.signType
@@ -60,7 +63,7 @@ func (c *Client) fillRequestData(params Params) Params {
 // postWithoutCert https no cert post
 func (c *Client) postWithoutCert(url string, params Params) (string, error) {
 	h := &http.Client{}
-	p := c.fillRequestData(params)
+	p := c.fillRequestData(params, url)
 	response, err := h.Post(url, bodyType, strings.NewReader(MapToXML(p)))
 	if err != nil {
 		return "", err
@@ -90,7 +93,7 @@ func (c *Client) postWithCert(url string, params Params) (string, error) {
 		DisableCompression: true,
 	}
 	h := &http.Client{Transport: transport}
-	p := c.fillRequestData(params)
+	p := c.fillRequestData(params, url)
 	response, err := h.Post(url, bodyType, strings.NewReader(MapToXML(p)))
 	if err != nil {
 		return "", err
@@ -152,7 +155,7 @@ func (c *Client) Sign(params Params) string {
 		str        string
 	)
 
-	//fmt.Println("签名前的Params:", buf.String())
+	//logx.Errorf("签名前的Params:%v", buf.String())
 
 	switch c.signType {
 	case MD5:
@@ -166,7 +169,6 @@ func (c *Client) Sign(params Params) string {
 		dataSha256 = h.Sum(nil)
 		str = hex.EncodeToString(dataSha256[:])
 	}
-
 	return strings.ToUpper(str)
 }
 
@@ -198,7 +200,7 @@ func (c *Client) processResponseXML(xmlStr string, needCheckSign ...bool) (Param
 	}
 }
 
-//Notify 异步通知处理
+// Notify 异步通知处理
 func (c *Client) Notify(req *http.Request) (Params, error) {
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -440,6 +442,66 @@ func (c *Client) AuthCodeToOpenid(params Params) (Params, error) {
 		url = AuthCodeToOpenidUrl
 	}
 	xmlStr, err := c.postWithoutCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXML(xmlStr)
+}
+
+// ProfitSharing 请求单次分账
+func (c *Client) ProfitSharing(params Params) (Params, error) {
+	var url string = ProfitSharingUrl
+	xmlStr, err := c.postWithCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXML(xmlStr)
+}
+
+// MultiProfitSharing 请求多次分账
+func (c *Client) MultiProfitSharing(params Params) (Params, error) {
+	var url string = MultiProfitSharingUrl
+	xmlStr, err := c.postWithCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXML(xmlStr)
+}
+
+// ProfitSharingFinish 完结分账
+func (c *Client) ProfitSharingFinish(params Params) (Params, error) {
+	var url string = ProfitSharingFinishUrl
+	xmlStr, err := c.postWithCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXML(xmlStr)
+}
+
+// ProfitSharingQuery 查询分账结果
+func (c *Client) ProfitSharingQuery(params Params) (Params, error) {
+	var url string = ProfitSharingQueryUrl
+	xmlStr, err := c.postWithCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXML(xmlStr)
+}
+
+// ProfitSharingReturn 分账回退
+func (c *Client) ProfitSharingReturn(params Params) (Params, error) {
+	var url string = ProfitSharingReturnUrl
+	xmlStr, err := c.postWithCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXML(xmlStr)
+}
+
+// ProfitSharingReturnQuery 分账回退结果查询
+func (c *Client) ProfitSharingReturnQuery(params Params) (Params, error) {
+	var url string = ProfitSharingReturnQueryUrl
+	xmlStr, err := c.postWithCert(url, params)
 	if err != nil {
 		return nil, err
 	}

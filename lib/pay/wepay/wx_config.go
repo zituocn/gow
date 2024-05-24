@@ -13,10 +13,11 @@ type WxConfig struct {
 	NotifyURL       string //异步通知地址
 	RefundNotifyUrl string //订单退款异步通知地址
 	OrderTime       int    //订单有效分钟数
+	IsProfitSharing bool   //是否分账 默认为不分账
 }
 
-//NewWxConfig 一个新的配置信息
-//也可以自己组装
+// NewWxConfig 一个新的配置信息
+// 也可以自己组装
 func NewWxConfig(appId, mchId, apiKey, serverIP string, isSandbox bool, notifyUrl string, orderTime int) *WxConfig {
 	return &WxConfig{
 		AppId:     appId,
@@ -29,7 +30,7 @@ func NewWxConfig(appId, mchId, apiKey, serverIP string, isSandbox bool, notifyUr
 	}
 }
 
-//SetCertData 设置证书
+// SetCertData 设置证书
 func (m *WxConfig) SetCertData(certPath string) (err error) {
 	certData, err := ioutil.ReadFile(certPath)
 	if err != nil {
@@ -42,4 +43,10 @@ func (m *WxConfig) SetCertData(certPath string) (err error) {
 // SetRefundNotifyUrl 设置退款异步通知地址
 func (m *WxConfig) SetRefundNotifyUrl(url string) {
 	m.RefundNotifyUrl = url
+}
+
+func (m *WxConfig) SetIsProfitSharing(needProfitSharing bool) {
+	if needProfitSharing {
+		m.IsProfitSharing = true
+	}
 }
