@@ -49,7 +49,6 @@ func (m *WxAPI) UnifiedOrder(body string, outTradeNo string, totalFee int, openI
 	if m.Client.IsProfitSharing {
 		//不传默认为不分账
 		//分账传Y，不分账传N
-		logx.Errorf("=====统一下单的时候标注了需要分账=======")
 		params.SetString("profit_sharing", "Y")
 	}
 	//订单的有效期，开始和结束时间
@@ -269,7 +268,6 @@ func (m *WxAPI) OrderQuery(transactionID, outTradeNo string) (state bool, tradeS
 // outOrderNo 商户分账单号
 // 单次分账请求按照传入的分账接收方账号和资金进行分账，同时会将订单剩余的待分账金额解冻给本商户。故操作成功后，订单不能再进行分账，也不能进行分账完结
 func (m *WxAPI) ProfitSharing(transactionID, outOrderNo string, receiver []*ProfitSharingReceiverReq) (ret *ProfitSharingResp, errCode string, err error) {
-	fmt.Println("开始请求分账")
 	if transactionID == "" {
 		err = fmt.Errorf("[transactionID]不能为空")
 		return
@@ -534,7 +532,7 @@ func (m *WxAPI) ProfitSharingReturn(orderId, outOrderNo string, outReturnNo stri
 		return
 	}
 	if params.GetString("return_code") == "SUCCESS" {
-		logx.Errorf("【分账回退】return_code = success")
+		//logx.Errorf("【分账回退】return_code = success")
 		orderId = params.GetString("order_id")
 		outOrderNo = params.GetString("out_order_no")
 		outReturnNo = params.GetString("out_return_no")
@@ -599,7 +597,6 @@ func (m *WxAPI) ProfitSharingReturnQuery(orderId, outOrderNo string, outReturnNo
 		return
 	}
 	if params.GetString("return_code") == "SUCCESS" {
-		logx.Errorf("【分账回退结果查询】return_code = success")
 		orderId = params.GetString("order_id")
 		outOrderNo = params.GetString("out_order_no")
 		outReturnNo = params.GetString("out_return_no")
