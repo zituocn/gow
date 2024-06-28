@@ -156,11 +156,7 @@ func (engine *Engine) SetAppConfig(app *AppConfig) {
 		engine.gzipOn = app.GzipOn
 		engine.ignoreCase = app.IgnoreCase
 	}
-}
-
-// ResetRoute clear engine's route
-func (engine *Engine) ResetRoute() {
-	engine.trees = make([]methodTree, 0, 9)
+	engine.useMiddleware()
 }
 
 // AddFuncMap add fn func to template func map
@@ -182,6 +178,10 @@ func (engine *Engine) SetViews(path string) {
 //	r.SetGzipOn(true)
 func (engine *Engine) SetGzipOn(on bool) {
 	engine.gzipOn = on
+	// use gzip middleware
+	if engine.gzipOn {
+		engine.Use(Gzip(DefaultCompression))
+	}
 }
 
 // SetIgnoreCase set ignore case on the route
@@ -206,7 +206,6 @@ func (engine *Engine) SetIgnoreTrailingSlash(ignore bool) {
 //	r.Run("127.0.0.1:8080)
 func (engine *Engine) Run(args ...interface{}) (err error) {
 	defer func() { logx.Error(err) }()
-	engine.useMiddleware()
 	if engine.AutoRender {
 		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
 	}
@@ -222,7 +221,6 @@ func (engine *Engine) Run(args ...interface{}) (err error) {
 // RunTLS  start https service
 func (engine *Engine) RunTLS(certFile, keyFile string, args ...interface{}) (err error) {
 	defer func() { logx.Error(err) }()
-	engine.useMiddleware()
 	if engine.AutoRender {
 		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
 	}
@@ -238,7 +236,6 @@ func (engine *Engine) RunTLS(certFile, keyFile string, args ...interface{}) (err
 // RunTLSLoadConfig use tls.Config{}
 func (engine *Engine) RunTLSLoadConfig(cfg *tls.Config, args ...interface{}) (err error) {
 	defer func() { logx.Error(err) }()
-	engine.useMiddleware()
 	if engine.AutoRender {
 		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
 	}
@@ -259,7 +256,6 @@ func (engine *Engine) RunTLSLoadConfig(cfg *tls.Config, args ...interface{}) (er
 // RunUnix start unix:/ service
 func (engine *Engine) RunUnix(file string) (err error) {
 	defer func() { logx.Error(err) }()
-	engine.useMiddleware()
 	listener, err := net.Listen("unix", file)
 	if err != nil {
 		return

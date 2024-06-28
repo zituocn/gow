@@ -38,7 +38,7 @@ func NewSessionManager(cookieName string, maxLifeTime int64) *Manager {
 	return mgr
 }
 
-//Start Start session return sessionID
+// Start  session return sessionID
 func (m *Manager) Start(w http.ResponseWriter, r *http.Request) string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -50,7 +50,6 @@ func (m *Manager) Start(w http.ResponseWriter, r *http.Request) string {
 	if err == nil && ck != nil && ck.Value != "" {
 		sessionID = ck.Value
 	}
-
 	if sessionID != "" && m.session != nil {
 		return sessionID
 	}
@@ -70,13 +69,15 @@ func (m *Manager) Start(w http.ResponseWriter, r *http.Request) string {
 		Value:    sessionID,
 		Path:     "/",
 		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 		MaxAge:   int(m.maxLifeTime),
 	}
 	http.SetCookie(w, &cookie)
 	return sessionID
 }
 
-// End end session
+// End  session
+//
 //	delete sessionID from cookie and map
 func (m *Manager) End(w http.ResponseWriter, r *http.Request) {
 	ck, err := r.Cookie(m.cookieName)
@@ -125,14 +126,14 @@ func (m *Manager) Get(sessionID string, key interface{}) (interface{}, bool) {
 	defer m.mu.RUnlock()
 
 	if session, ok := m.session[sessionID]; ok {
-		if val, ok := session.values[key]; ok {
-			return val, ok
+		if val, ok1 := session.values[key]; ok1 {
+			return val, ok1
 		}
 	}
 	return nil, false
 }
 
-// Set set session
+// Set  session
 func (m *Manager) Set(sessionID string, key, value interface{}) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -142,7 +143,7 @@ func (m *Manager) Set(sessionID string, key, value interface{}) {
 	}
 }
 
-//Delete delete value by key
+// Delete delete value by key
 func (m *Manager) Delete(sessionID string, key interface{}) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

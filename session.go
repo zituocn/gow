@@ -7,7 +7,7 @@ sam
 r:=gow.New()
 r.Use(Session())
 
- */
+*/
 
 package gow
 
@@ -24,14 +24,16 @@ var (
 )
 
 // InitSession   init gow session
+//
 //	before using session,please call this function first
 func InitSession() {
 	sessionManager = session.NewSessionManager(cookieName, 3600)
 }
 
-// Session session middleware
-//		r := gow.Default()
-//		r.Use(gow.Session())
+// Session  middleware
+//
+//	r := gow.Default()
+//	r.Use(gow.Session())
 func Session() HandlerFunc {
 	return func(c *Context) {
 		if sessionManager == nil {
@@ -65,14 +67,16 @@ func (c *Context) SessionString(key string) string {
 }
 
 // SessionInt return int
-//		default 0
+//
+//	default 0
 func (c *Context) SessionInt(key string) int {
 	v := c.SessionInt64(key)
 	return int(v)
 }
 
 // SessionInt64 return int64
-//		default 0
+//
+//	default 0
 func (c *Context) SessionInt64(key string) int64 {
 	ret := c.GetSession(key)
 	v, err := strconv.ParseInt(fmt.Sprintf("%v", ret), 10, 64)
@@ -83,7 +87,8 @@ func (c *Context) SessionInt64(key string) int64 {
 }
 
 // SessionBool return bool
-//		default false
+//
+//	default false
 func (c *Context) SessionBool(key string) bool {
 	ret := c.GetSession(key)
 	v, ok := ret.(bool)
