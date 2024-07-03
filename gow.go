@@ -198,6 +198,11 @@ func (engine *Engine) SetIgnoreTrailingSlash(ignore bool) {
 	engine.ignoreTrailingSlash = ignore
 }
 
+// ResetRoute clear engine's route
+func (engine *Engine) ResetRoute() {
+	engine.trees = make([]methodTree, 0, 9)
+}
+
 // Run start http service default 127.0.0.1:8080
 //
 //	r.Run()
