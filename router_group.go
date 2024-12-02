@@ -8,6 +8,7 @@ gin route_group
 package gow
 
 import (
+	"fmt"
 	"net/http"
 	"path"
 	"strings"
@@ -73,7 +74,9 @@ var _IRouter = &RouterGroup{}
 // OR:
 // r.Use(Demo(),Demo2())
 func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
-	group.Handlers = append(group.Handlers, middleware...)
+	//group.Handlers = append(group.Handlers, middleware...)
+	//group.Handlers = group.addHandlers(middleware...)
+	group.addHandlers(middleware...)
 	return group.returnObj()
 }
 
@@ -191,10 +194,10 @@ func (group *RouterGroup) handle(method, path string, handlers HandlersChain) {
 	}
 
 	absolutePath := group.calculateAbsolutePath(path)
-	var match matchValue
-	if group.engine.Match(method, absolutePath, &match) {
-		panic("method: " + method + " path: " + absolutePath + " has been defined")
-	}
+	//var match matchValue
+	//if group.engine.Match(method, absolutePath, &match) {
+	//	panic("method: " + method + " path: " + absolutePath + " has been defined")
+	//}
 	handlers = group.combineHandlers(handlers)
 	group.engine.addRoute(method, absolutePath, handlers)
 }
@@ -267,6 +270,28 @@ func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain 
 	copy(mergedHandlers, group.Handlers)
 	copy(mergedHandlers[len(group.Handlers):], handlers)
 	return mergedHandlers
+}
+
+func (group *RouterGroup) addHandlers(handlers ...HandlerFunc) {
+	finalSize := len(group.Handlers) + len(handlers)
+	if finalSize >= int(abortIndex) {
+		panic("too many handlers")
+	}
+	for _, hf := range handlers {
+		if !existHandler(hf, group.Handlers) {
+			group.Handlers = append(group.Handlers, hf)
+		}
+	}
+}
+
+func existHandler(handler HandlerFunc, handlers HandlersChain) bool {
+	for _, hf := range handlers {
+		if fmt.Sprintf("%p", hf) == fmt.Sprintf("%p", handler) {
+			return true
+		}
+
+	}
+	return false
 }
 
 func (group *RouterGroup) calculateAbsolutePath(path string) string {

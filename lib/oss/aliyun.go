@@ -49,6 +49,7 @@ func NewAliClient(accessKeyId, secret, endPoint, bucketName, serverUrl string) *
 }
 
 // UploadFile 上传一个文件，返回远程地址及错误
+//
 //	不强制重命名文件名
 //	like:   /dir/20210309/filename
 func (c *AliClient) UploadFile(reader io.Reader, dir, filename string) (url string, err error) {
@@ -80,8 +81,9 @@ func (c *AliClient) UploadFile(reader io.Reader, dir, filename string) (url stri
 }
 
 // Upload 上传文件	返回远程地址及错误
-//		url,err:=client.Upload(reader,dir,ext)
-//		会强制重命名文件名
+//
+//	url,err:=client.Upload(reader,dir,ext)
+//	会强制重命名文件名
 func (c *AliClient) Upload(reader io.Reader, dir, ext string) (url string, err error) {
 	if ext == "" {
 		ext = ".jpg"
@@ -97,6 +99,7 @@ func (c *AliClient) Upload(reader io.Reader, dir, ext string) (url string, err e
 	}
 	uuid, _ := util.GetUUID()
 	filePath := fmt.Sprintf("%s/%s/%s", dir, time.Now().Format("20060102"), uuid+ext)
+
 	err = bucket.PutObject(filePath, reader)
 	if err != nil {
 		return

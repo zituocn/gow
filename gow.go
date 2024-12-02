@@ -120,7 +120,6 @@ func New() *Engine {
 		trees: make([]methodTree, 0, 9),
 	}
 	engine.RouterGroup.engine = engine
-
 	engine.pool.New = func() interface{} {
 		return engine.allocateContext()
 	}
@@ -200,7 +199,15 @@ func (engine *Engine) SetIgnoreTrailingSlash(ignore bool) {
 
 // ResetRoute clear engine's route
 func (engine *Engine) ResetRoute() {
-	engine.trees = make([]methodTree, 0, 9)
+	engine.trees = nil
+}
+
+// SetRunMode set engine's run mode
+func (engine *Engine) SetRunMode(mode string) {
+	engine.RunMode = mode
+	if engine.AutoRender {
+		engine.Render = render.HTMLRender{}.NewHTMLRender(engine.viewsPath, engine.FuncMap, engine.delims, engine.AutoRender, engine.RunMode)
+	}
 }
 
 // Run start http service default 127.0.0.1:8080
@@ -403,6 +410,18 @@ func (engine *Engine) RouteMap() []*RouteMapInfo {
 
 // addRoute add route to engine.trees
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
+	mt := methodTree{
+		method: method,
+	}
+	rc := &routeConfig{
+		ignoreCase:          engine.ignoreCase,
+		ignoreTrailingSlash: engine.ignoreTrailingSlash,
+	}
+	mt.routes = mt.addRoute(path, handlers, rc)
+	engine.trees = append(engine.trees, mt)
+}
+
+func (engine *Engine) clearAndAddRoute(method, path string, handlers HandlersChain) {
 	mt := methodTree{
 		method: method,
 	}
