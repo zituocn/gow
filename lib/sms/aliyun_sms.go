@@ -29,25 +29,25 @@ func (m *AliSmsClient) SetDebug(enabled bool) {
 }
 
 // SendVerifyCode 验证码短信
-func (m *AliSmsClient) SendVerifyCode(sign, templateID, phone, code string) (err error) {
+func (m *AliSmsClient) SendVerifyCode(sign, templateID, phone, code string) (bizId string, err error) {
 	templateParam := fmt.Sprintf(`{"code":"%v"}`, code)
 	return m.send(phone, sign, templateID, templateParam)
 }
 
-//SendMarket 营销短信
-func (m *AliSmsClient) SendMarket(sign, templateId, phone string) (err error) {
+// SendMarket 营销短信
+func (m *AliSmsClient) SendMarket(sign, templateId, phone string) (bizId string, err error) {
 	return m.send(phone, sign, templateId, "")
 }
 
 // SendNotice 发送通知短信
-func (m *AliSmsClient) SendNotice(sign, templateId, phone string, templateParam string) (err error) {
+func (m *AliSmsClient) SendNotice(sign, templateId, phone string, templateParam string) (bizId string, err error) {
 	return m.send(phone, sign, templateId, templateParam)
 }
 
 //{"Message":"OK","RequestId":"8295BA5B-0536-463D-BC2D-49A96CAAC37E","BizId":"354401592887345639^0","Code":"OK"}
 
 // send
-func (m *AliSmsClient) send(phoneNumbers, sign, templateId, templateParam string) (err error) {
+func (m *AliSmsClient) send(phoneNumbers, sign, templateId, templateParam string) (bizId string, err error) {
 	client, err := dysmsapi.NewClientWithAccessKey("cn-hangzhou", m.AccessKeyID, m.AccessKeySecret)
 	if err != nil {
 		return
@@ -71,6 +71,7 @@ func (m *AliSmsClient) send(phoneNumbers, sign, templateId, templateParam string
 		err = fmt.Errorf("发送失败：%v", response.Message)
 		return
 	}
+	bizId = response.BizId
 	return
 
 }

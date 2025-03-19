@@ -61,6 +61,16 @@ func NewMemoryCache(defaultHour, cleanupInterval int) *MemoryCache {
 	}
 }
 
+// expireTime 缓存的有效时长，创建一个过期时间为expireTime的缓存
+// cleanupInterval 清理过期缓存的频率，每cleanupInterval清理一次过期的缓存
+func NewMemoryCacheWithExpireTime(expireTime, cleanupInterval time.Duration) *MemoryCache {
+	return &MemoryCache{
+		//defaultHour:     0,
+		//cleanupInterval: 0,
+		cc: cache.New(expireTime, cleanupInterval),
+	}
+}
+
 // SetCache set cache to key and return error
 func (m *MemoryCache) SetCache(key string, value interface{}) error {
 	if key == "" {

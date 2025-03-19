@@ -6,6 +6,7 @@ import (
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	sms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111" // 引入sms
+	"strings"
 )
 
 // TencentSmsClient tencent sms client
@@ -25,12 +26,14 @@ func NewTencentSmsClient(sdkAppId, secretId, secretKey string) *TencentSmsClient
 }
 
 // SendVerifyCode 验证码短信
-func (m *TencentSmsClient) SendVerifyCode(sign, templateID, phone, code string) (err error) {
-	return m.send(sign, templateID, []string{fmt.Sprintf("+86%s", phone)}, []string{code})
+func (m *TencentSmsClient) SendVerifyCode(sign, templateID, phone, code string) (serialNo string, err error) {
+	ret, err := m.send(sign, templateID, []string{fmt.Sprintf("+86%s", phone)}, []string{code})
+	serialNo = ret[phone]
+	return
 }
 
 // SendMarket 营销类短信 批量号码 发送相同的内容
-func (m *TencentSmsClient) SendMarket(sign, templateID string, phone, templateParam []string) (err error) {
+func (m *TencentSmsClient) SendMarket(sign, templateID string, phone, templateParam []string) (serialNo map[string]string, err error) {
 	var phoneData []string
 	for _, item := range phone {
 		phoneData = append(phoneData, fmt.Sprintf("+86%s", item))
@@ -38,8 +41,9 @@ func (m *TencentSmsClient) SendMarket(sign, templateID string, phone, templatePa
 	return m.send(sign, templateID, phoneData, templateParam)
 }
 
+// serialNo: 本次发送标识
 // 参考文档：https://cloud.tencent.com/document/product/382/43199
-func (m *TencentSmsClient) send(sign, templateID string, phone, templateParam []string) (err error) {
+func (m *TencentSmsClient) send(sign, templateID string, phone, templateParam []string) (serialNo map[string]string, err error) {
 	credential := common.NewCredential(m.SecretId, m.SecretKey)
 	/* 非必要步骤:
 	 * 实例化一个客户端配置对象，可以指定超时时间等配置 */
@@ -89,18 +93,37 @@ func (m *TencentSmsClient) send(sign, templateID string, phone, templateParam []
 	//	panic(err)
 	//}
 
-	//b, _ := json.Marshal(response.Response)
-	// 打印返回的json字符串
-	//logx.Errorf("%s", b)
-
 	// {"SendStatusSet":[{"SerialNo":"9331:261873439117417597983741023","PhoneNumber":"+8615095910236","Fee":1,"SessionContext":"","Code":"Ok","Message":"send success","IsoCode":"CN"}],"RequestId":"46f1c9ae-a917-4fb0-bd52-2b609415890e"}
-
 	if response.Response != nil && len(response.Response.SendStatusSet) > 0 {
 		//暂时1次只发送1个号码
-		//logx.Errorf("code:%v ,,,, message:%v", *response.Response.SendStatusSet[0].Code, *response.Response.SendStatusSet[0].Message)
-		if *response.Response.SendStatusSet[0].Code != "Ok" {
-			err = fmt.Errorf("[腾讯云]发送短信失败：%v", *response.Response.SendStatusSet[0].Message)
-			return
+		serialNo = make(map[string]string)
+		//短信验证码 1次只发送1个号码
+		if len(phone) == 1 {
+			//去掉 +86
+			serialNo[phone[0][3:]] = *response.Response.SendStatusSet[0].SerialNo
+			if *response.Response.SendStatusSet[0].Code != "Ok" {
+				err = fmt.Errorf("[腾讯云]发送短信失败：%v", *response.Response.SendStatusSet[0].Message)
+				return
+			}
+		}
+		//批量发送的时候
+		if len(phone) > 1 {
+			var errList []string
+			for _, one := range phone {
+				for _, rItem := range response.Response.SendStatusSet {
+					if one == *rItem.PhoneNumber {
+						if *rItem.Code != "Ok" {
+							errList = append(errList, one)
+						}
+						serialNo[one[3:]] = *rItem.SerialNo
+						break
+					}
+				}
+			}
+			if len(errList) > 0 {
+				err = fmt.Errorf("[腾讯云]发送[%s]短信失败：%v", strings.Join(errList, "、"), *response.Response.SendStatusSet[0].Message)
+				return
+			}
 		}
 	}
 	return

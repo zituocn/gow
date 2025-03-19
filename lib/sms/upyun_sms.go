@@ -11,7 +11,7 @@ const (
 	smsUrl = "https://sms-api.upyun.com/api/messages"
 )
 
-//UpYunSmsClient UpYunSmsClient
+// UpYunSmsClient UpYunSmsClient
 type UpYunSmsClient struct {
 	Token string
 }
@@ -24,8 +24,9 @@ func NewUpYunSmsClient(token string) *UpYunSmsClient {
 }
 
 // SendVerifyCode 发送验证码短信
+//
 //	templateId = 模板ID
-func (m *UpYunSmsClient) SendVerifyCode(mobile string, templateId int64, code string) (err error) {
+func (m *UpYunSmsClient) SendVerifyCode(mobile string, templateId int64, code string) (messageId string, err error) {
 	if mobile == "" {
 		err = fmt.Errorf("手机号格式不正确")
 		return
@@ -34,16 +35,15 @@ func (m *UpYunSmsClient) SendVerifyCode(mobile string, templateId int64, code st
 	body.Mobile = mobile
 	body.TemplateID = templateId
 	body.Vars = fmt.Sprintf("%v", code)
-	err = m.send(body)
+	messageId, err = m.send(body)
 	if err != nil {
-		return err
+		return
 	}
-
 	return
 }
 
-//send 发送请求
-func (m *UpYunSmsClient) send(body *UpYunSmsBody) (err error) {
+// send 发送请求
+func (m *UpYunSmsClient) send(body *UpYunSmsBody) (messageId string, err error) {
 	req.SetTimeout(5 * time.Second)
 	header := req.Header{
 		"Authorization": m.Token,
@@ -71,22 +71,26 @@ func (m *UpYunSmsClient) send(body *UpYunSmsBody) (err error) {
 		return
 	}
 
+	if len(ret.MessageIDS) == 1 {
+		messageId = fmt.Sprintf("%d", ret.MessageIDS[0].MessageID)
+	}
+
 	return
 }
 
-//UpYunSmsBody 发送模型
+// UpYunSmsBody 发送模型
 type UpYunSmsBody struct {
 	Mobile     string `json:"mobile"`
 	TemplateID int64  `json:"template_id"`
 	Vars       string `json:"vars"`
 }
 
-//UpYunResult  返回信息
+// UpYunResult  返回信息
 type UpYunResult struct {
 	MessageIDS []*UpYunMessage `json:"message_ids"`
 }
 
-//UpYunMessage UpYunMessage
+// UpYunMessage UpYunMessage
 type UpYunMessage struct {
 	MessageID int64  `json:"message_id"`
 	Mobile    string `json:"mobile"`
