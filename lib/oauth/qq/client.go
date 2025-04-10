@@ -9,6 +9,7 @@ package qq
 import (
 	"fmt"
 	"github.com/imroc/req"
+	"github.com/zituocn/logx"
 	"time"
 )
 
@@ -16,7 +17,7 @@ const (
 
 	// 获取token
 	// https://wiki.connect.qq.com/%E4%BD%BF%E7%94%A8authorization_code%E8%8E%B7%E5%8F%96access_token
-	accessTokenUrl = "https://graph.qq.com/oauth2.0/token?grant_type=authorization_code&client_id=%s&client_secret=%s&code=%s&redirect_uri=%s&fmt=json"
+	accessTokenUrl = "https://graph.qq.com/oauth2.0/token?grant_type=authorization_code&client_id=%s&client_secret=%s&code=%s&redirect_uri=%s&fmt=json&need_openid=1"
 
 	//获取qq用户信息
 	// https://wiki.connect.qq.com/get_user_info
@@ -43,9 +44,10 @@ func NewClient(appId, secret string) *Client {
 
 // GetAccessTokenByCode 根据code获取accessToken
 // 主要用到PC网站上
+//
 //	第二步
 //	之前还有获取code的方法 https://wiki.connect.qq.com/%E4%BD%BF%E7%94%A8authorization_code%E8%8E%B7%E5%8F%96access_token
-func (m *Client) GetAccessTokenByCode(code, redirectUrl string) (accessToken string, err error) {
+func (m *Client) GetAccessTokenByCode(code, redirectUrl string) (accessData *AccessData, err error) {
 	url := fmt.Sprintf(accessTokenUrl, m.AppId, m.Secret, code, redirectUrl)
 	req.SetTimeout(5 * time.Second)
 	resp, err := req.Get(url)
@@ -54,11 +56,10 @@ func (m *Client) GetAccessTokenByCode(code, redirectUrl string) (accessToken str
 		return
 	}
 
-	accessData := new(AccessData)
+	logx.Errorf("accessToken : %v", string(resp.Bytes()))
+	accessData = new(AccessData)
 	resp.ToJSON(&accessData)
-	if accessData != nil && accessData.AccessToken != "" {
-		accessToken = accessData.AccessToken
-	} else {
+	if accessData.AccessToken == "" {
 		err = fmt.Errorf("[QQ] 返回错误:%v", resp.String())
 		return
 	}
@@ -66,6 +67,7 @@ func (m *Client) GetAccessTokenByCode(code, redirectUrl string) (accessToken str
 }
 
 // GetOpenIdAndUnionIdByAccessToken 返回openid和unionid
+//
 //	主要用到pc网上
 //	第三步
 func (m *Client) GetOpenIdAndUnionIdByAccessToken(accessToken string) (openId string, unionId string, err error) {
@@ -91,6 +93,7 @@ func (m *Client) GetOpenIdAndUnionIdByAccessToken(accessToken string) (openId st
 }
 
 // GetQQUser return qq user
+//
 //	by openId
 //	app端可直接使用此方法
 //	pc网站调用时，这是第四步

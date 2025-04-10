@@ -140,3 +140,11 @@ type ProfitSharingReturnRet struct {
 	FailReason string `json:"fail_reason"`
 	FinishTime string `json:"finish_time"`
 }
+
+// 返回
+type CommonRet struct {
+	ReturnCode string `json:"return_code"`
+	ReturnMsg  string `json:"return_msg"`
+	ResultCode string `json:"result_code"`
+	ErrCode    string `json:"err_code"`
+}

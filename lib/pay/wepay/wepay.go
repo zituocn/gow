@@ -759,3 +759,19 @@ func (m *WxAPI) RefundNotify(req *http.Request) (ret *NotifyRet, refundData *WXP
 	}
 	return
 }
+
+func (m *WxAPI) CloseOrder(outTradeNo string) (ret *CommonRet) {
+	params := make(Params)
+	params.SetString("out_trade_no", outTradeNo)
+	params, err := m.Client.CloseOrder(params)
+	if err != nil {
+		return
+	}
+	ret = new(CommonRet)
+	ret.ReturnCode = params.GetString("return_code")
+	ret.ReturnMsg = params.GetString("return_msg")
+	if ret.ReturnCode == "SUCCESS" {
+		ret.ResultCode = params.GetString("result_code")
+	}
+	return
+}
