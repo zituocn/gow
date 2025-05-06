@@ -108,6 +108,28 @@ func (c *AliClient) Upload(reader io.Reader, dir, ext string) (url string, err e
 	return
 }
 
+// UploadToDir 上传一个文件到指定的地址
+//
+//	如果有文件会直接覆盖
+func (c *AliClient) UploadToDir(reader io.Reader, filename string) (url string, err error) {
+	client, err := oss.New(c.EndPoint, c.AccessKeyId, c.Secret)
+	if err != nil {
+		err = fmt.Errorf("[client]init失败:%v", err)
+		return
+	}
+	bucket, err := client.Bucket(c.BucketName)
+	if err != nil {
+		return
+	}
+	filePath := filename
+	err = bucket.PutObject(filePath, reader)
+	if err != nil {
+		return
+	}
+	url = fmt.Sprintf("%s%s", c.ServerUrl, filePath)
+	return
+}
+
 // UploadRemoteFile 上传远程图片到ali oss
 func (c *AliClient) UploadRemoteFile(httpUrl, dir string) (url string, err error) {
 	resp, err := http.Get(httpUrl)

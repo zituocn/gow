@@ -63,6 +63,8 @@ type LogFormatterParams struct {
 	BodySize int
 	// Keys are the keys set on the request's context.
 	Keys map[string]interface{}
+	// user agent string
+	UserAgent string
 }
 
 // StatusCodeColor is the ANSI color for appropriately logging http status code to a terminal.
@@ -115,6 +117,7 @@ func (p *LogFormatterParams) IsOutputColor() bool {
 	return consoleColorMode == forceColor || (consoleColorMode == autoColor && p.isTerm)
 }
 
+// Logger default logger
 func Logger() HandlerFunc {
 	out := DefaultWriter
 	var notLogged []string
@@ -151,6 +154,7 @@ func Logger() HandlerFunc {
 				StatusCode: c.Writer.Status(),
 				ClientIP:   c.GetIP(),
 				BodySize:   c.Writer.Size(),
+				UserAgent:  c.UserAgent(),
 			}
 			param.Latency = param.TimeStamp.Sub(start)
 
@@ -181,6 +185,76 @@ func Logger() HandlerFunc {
 				param.ErrorMessage,
 			)
 		}
+	}
+}
 
+// LoggerLong write useragent
+func LoggerLong() HandlerFunc {
+	out := DefaultWriter
+	var notLogged []string
+	isTerm := true
+	if w, ok := out.(*os.File); !ok || os.Getenv("TERM") == "dumb" ||
+		(!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd())) {
+		isTerm = false
+	}
+	var skip map[string]struct{}
+
+	if length := len(notLogged); length > 0 {
+		skip = make(map[string]struct{}, length)
+
+		for _, path := range notLogged {
+			skip[path] = struct{}{}
+		}
+	}
+
+	return func(c *Context) {
+
+		start := time.Now()
+		path := c.Request.URL.Path
+		raw := c.Request.URL.RawQuery
+
+		c.Next()
+
+		if _, ok := skip[path]; !ok {
+			param := LogFormatterParams{
+				Request:    c.Request,
+				isTerm:     isTerm,
+				Keys:       c.Keys,
+				TimeStamp:  time.Now(),
+				Method:     c.Request.Method,
+				StatusCode: c.Writer.Status(),
+				ClientIP:   c.GetIP(),
+				BodySize:   c.Writer.Size(),
+				UserAgent:  c.UserAgent(),
+			}
+			param.Latency = param.TimeStamp.Sub(start)
+
+			if raw != "" {
+				path = path + "?" + raw
+			}
+			param.Path = path
+
+			var statusColor, methodColor, resetColor string
+
+			if param.IsOutputColor() && !c.IsProd() {
+				statusColor = param.StatusCodeColor()
+				methodColor = param.MethodColor()
+				resetColor = param.ResetColor()
+			}
+
+			if param.Latency > time.Minute {
+				// Truncate in a golang < 1.8 safe way
+				param.Latency = param.Latency - param.Latency%time.Second
+			}
+
+			logx.Infof("%s %3d %s| %13v | %15s |%s %-7s %s %s %s",
+				statusColor, param.StatusCode, resetColor,
+				param.Latency,
+				param.ClientIP,
+				methodColor, param.Method, resetColor,
+				param.Path,
+				param.UserAgent,
+			)
+		}
 	}
 }

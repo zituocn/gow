@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"math"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -360,17 +361,18 @@ func (c *Context) GetIP() (ip string) {
 		ip = c.GetHeader("X-Real-IP")
 	}
 	if ip == "" {
+		ip = c.GetHeader("X-Forwarded-For")
+	}
+	if ip == "" {
 		ip = c.ClientIP()
 	}
 	if ip == "" {
 		ip = "10.10.10.2"
 	}
-
 	ips := strings.Split(ip, ",")
 	if len(ips) > 0 {
 		ip = ips[0]
 	}
-
 	return strings.TrimSpace(ip)
 }
 
@@ -379,10 +381,7 @@ func (c *Context) GetIP() (ip string) {
 //	return c.Request.RemoteAddr[0]
 func (c *Context) ClientIP() (ip string) {
 	addr := c.Request.RemoteAddr
-	str := strings.Split(addr, ":")
-	if len(str) > 1 {
-		ip = str[0]
-	}
+	ip, _, _ = net.SplitHostPort(addr)
 	return
 }
 

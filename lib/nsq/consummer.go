@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-//MessageHandler MessageHandler
+// MessageHandler MessageHandler
 type MessageHandler struct {
 	msgChan     chan *gnsq.Message
 	stop        bool
@@ -37,8 +37,8 @@ func (m *MessageHandler) SetMaxInFlight(val int) {
 	m.maxInFlight = val
 }
 
-//SetMsgTimeout  set nsq consumer MsgTimeout
-func (m *MessageHandler) SetMsgTimeout(d time.Duration){
+// SetMsgTimeout  set nsq consumer MsgTimeout
+func (m *MessageHandler) SetMsgTimeout(d time.Duration) {
 	m.msgTimeout = d
 }
 
@@ -48,7 +48,7 @@ func (m *MessageHandler) Registry(topic string, ch chan []byte) {
 	if m.maxInFlight > 0 {
 		config.MaxInFlight = m.maxInFlight
 	}
-	if m.msgTimeout != 0{
+	if m.msgTimeout != 0 {
 		config.MsgTimeout = m.msgTimeout
 	}
 	consumer, err := gnsq.NewConsumer(topic, m.Channel, config)
@@ -65,7 +65,7 @@ func (m *MessageHandler) Registry(topic string, ch chan []byte) {
 
 }
 
-// process process
+// process
 func (m *MessageHandler) process(ch chan<- []byte) {
 	m.stop = false
 	for {
@@ -80,7 +80,7 @@ func (m *MessageHandler) process(ch chan<- []byte) {
 	}
 }
 
-// handlerMessage handlerMessage
+// handlerMessage
 func (m *MessageHandler) handlerMessage(message *gnsq.Message) error {
 	if !m.stop {
 		m.msgChan <- message

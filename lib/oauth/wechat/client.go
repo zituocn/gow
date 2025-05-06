@@ -1,7 +1,5 @@
 package wechat
 
-
-
 import (
 	"crypto/md5"
 	"crypto/sha1"
@@ -26,15 +24,15 @@ const (
 	ticketUrl = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=%v&type=jsapi"
 )
 
-//Client Client
+// Client webchat client
 type Client struct {
 	AppId  string
 	Secret string
 	ApiKey string //仅支付时需要
 }
 
-//NewClient NewClient
-//传入appId和appSecret
+// NewClient NewClient
+// 传入appId和appSecret
 func NewClient(appId, secret string) *Client {
 	return &Client{
 		AppId:  appId,
@@ -42,13 +40,13 @@ func NewClient(appId, secret string) *Client {
 	}
 }
 
-//SetApiKey 公众号支付时，必须设置此值
+// SetApiKey 公众号支付时，必须设置此值
 func (c *Client) SetApiKey(apiKey string) {
 	c.ApiKey = apiKey
 }
 
-//CodeToAccessToken 根据code值换行accessToken
-//第一步
+// CodeToAccessToken 根据code值换行accessToken
+// 第一步
 func (c *Client) CodeToAccessToken(code string) (accessData *AccessData, err error) {
 	if code == "" {
 		err = fmt.Errorf("[wechat]code为空")
@@ -73,8 +71,8 @@ func (c *Client) CodeToAccessToken(code string) (accessData *AccessData, err err
 	return
 }
 
-//GetWxUser 根据accessToken和openid获取用户的基本信息
-//第二步
+// GetWxUser 根据accessToken和openid获取用户的基本信息
+// 第二步
 func (c *Client) GetWxUser(accessToken, openid string) (wxUser *WxUser, err error) {
 	if accessToken == "" || openid == "" {
 		err = fmt.Errorf("[wechat]accessToken或openido为空")
@@ -101,9 +99,9 @@ func (c *Client) GetWxUser(accessToken, openid string) (wxUser *WxUser, err erro
 	return
 }
 
-//GetMpGlobalToken 获取微信公众号的全局token
-//expiresIn:过期时间
-//此值返回后，需要存放起来，过期时间通常为：7200
+// GetMpGlobalToken 获取微信公众号的全局token
+// expiresIn:过期时间
+// 此值返回后，需要存放起来，过期时间通常为：7200
 func (c *Client) GetMpGlobalToken() (mpTokenData *MpTokenData, err error) {
 	url := fmt.Sprintf(globalTokenUrl, c.AppId, c.Secret)
 	req.SetTimeout(10 * time.Second)
@@ -128,8 +126,8 @@ func (c *Client) GetMpGlobalToken() (mpTokenData *MpTokenData, err error) {
 	return
 }
 
-//GetJSAPITicket 根据全局token，获取ticket
-//返回的ticket需要存放起来，过期时间通常为:7200
+// GetJSAPITicket 根据全局token，获取ticket
+// 返回的ticket需要存放起来，过期时间通常为:7200
 func (c *Client) GetJSAPITicket(mpGlobalToken string) (ticketData *TicketData, err error) {
 	if mpGlobalToken == "" {
 		err = fmt.Errorf("[wechat]全局token为空")
@@ -157,10 +155,10 @@ func (c *Client) GetJSAPITicket(mpGlobalToken string) (ticketData *TicketData, e
 	return
 }
 
-//GetJSAPIConfig 获取微信公众号js sdk api 的配置信息
-//输出到H5页面
-//ticket为暂存的ticket值
-//url为H5页面的完整地址
+// GetJSAPIConfig 获取微信公众号js sdk api 的配置信息
+// 输出到H5页面
+// ticket为暂存的ticket值
+// url为H5页面的完整地址
 func (c *Client) GetJSAPIConfig(ticket, url string) (data *JSWXConfig, err error) {
 	if ticket == "" {
 		err = fmt.Errorf("[wechat]ticket空")
@@ -198,8 +196,9 @@ func (c *Client) GetJSAPIConfig(ticket, url string) (data *JSWXConfig, err error
 	return
 }
 
-//GetPayConfig 获取公众号支付时的参数
-//		传入payParam为支付下单接口返回的信息
+// GetPayConfig 获取公众号支付时的参数
+//
+//	传入payParam为支付下单接口返回的信息
 func (c *Client) GetPayConfig(payParam string) (payConfig *PayConfig, err error) {
 	if payParam == "" {
 		err = fmt.Errorf("[wechat]payParam为空")
@@ -223,7 +222,7 @@ func (c *Client) GetPayConfig(payParam string) (payConfig *PayConfig, err error)
 	return
 }
 
-//sign pay时的签名方法
+// sign pay时的签名方法
 func sign(signStr string) (sign string) {
 	md5Ctx := md5.New()
 	md5Ctx.Write([]byte(signStr))
