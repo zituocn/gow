@@ -26,12 +26,16 @@ require (
 )
 
 require (
+	github.com/go-playground/validator/v10 v10.7.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/redis/go-redis/v9 v9.0.5
+	github.com/shopspring/decimal v1.4.0
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1115
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms v1.0.1115
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/zituocn/logx v0.0.5
+	golang.org/x/net v0.3.0
+	golang.org/x/text v0.5.0
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gorm v1.25.2-0.20230530020048-26663ab9bf55
 )
