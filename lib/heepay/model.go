@@ -39,7 +39,7 @@ type PayNotifyResp struct {
 	Result            string          // 支付结果, 1=成功 其它为未知
 	PayMessage        string          // 支付结果信息,支付成功时为空
 	AgentID           string          // 商户编号
-	JnetBillNO        string          // 商户退款单号(商户退款时没有退款单号则为空)
+	JnetBillNO        string          // 商户退款单号(商户退款时没有退款单号则为空)? 汇付宝交易号(订单号)
 	AgentBillID       string          // 商户系统内部的订单号
 	PayType           int             // 支付类型 微信：30 支付宝：22
 	PayAmt            decimal.Decimal // 订单实际支付金额
@@ -101,4 +101,22 @@ type RefundQueryXMLResp struct {
 	AgentID    string   `xml:"agent_id"`
 	DetailData string   `xml:"detail_data"` // 为-1001时表示无此退款单据;每条明细后跟换行符分隔;以英文逗号分隔的字符串: 汇付宝退款单号,商户退款单号(可为空),退款金额,退款状态(-1=失败；0=处理中,1=退款中,2=退款成功),退款时间,记录内码,商户手续费,子商户手续费(手续费是单据成功时,才会返回)
 	Sign       string   `xml:"sign"`
+}
+
+type WxMiNiMetaOption struct {
+	S  string `json:"s"`  //应用场景：微信小程序
+	N  string `json:"n"`  //应用名称：应用名称或者WAP网站名称
+	ID string `json:"id"` //WAP网站的首页URL或者包名
+	//IsMinipg   string `json:"is_minipg"`    //固定传1
+	//WxOpenId   string `json:"wx_openid"`    //用户openid
+	//WxSubAppId string `json:"wx_sub_appid"` //小程序appid
+	//....... 其余参数为选填 暂时忽略
+}
+
+type DirectPayXMLResp struct {
+	XMLName     xml.Name `xml:"root"`
+	RetCode     string   `xml:"ret_code"` // 0000表示操作成功
+	RetMsg      string   `xml:"ret_msg"`
+	RedirectURL string   `xml:"redirectUrl"`
+	Sign        string   `xml:"sign"`
 }

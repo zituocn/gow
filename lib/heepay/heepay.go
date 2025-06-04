@@ -49,7 +49,7 @@ func NewHeepay(agentID, payKey, refundKey string) *Heepay {
 }
 
 // WxMiniTrade 微信小程序下单
-func (h *Heepay) WxMiniTrade(order PaymentOrder) (tokenID string, err error) {
+func (h *Heepay) WxMiniTrade(order *PaymentOrder) (tokenID string, err error) {
 	err = h.ValidatePayAmt(order.PayAmt)
 	if err != nil {
 		return
@@ -121,7 +121,7 @@ func (h *Heepay) parseResponse(xmlData []byte) (string, error) {
 }
 
 // AliWapTrade payUrl: 前端访问的支付地址
-func (h *Heepay) AliWapTrade(order PaymentOrder) (payUrl string, err error) {
+func (h *Heepay) AliWapTrade(order *PaymentOrder) (payUrl string, err error) {
 	err = h.ValidatePayAmt(order.PayAmt)
 	if err != nil {
 		return
@@ -160,13 +160,25 @@ func (h *Heepay) AliWapTrade(order PaymentOrder) (payUrl string, err error) {
 	params.Add("notify_url", order.NotifyURL)
 	params.Add("return_url", order.ReturnURL)
 	params.Add("user_ip", order.UserIP)
-	params.Add("goods_name", order.GoodsName)
-	params.Add("goods_num", strconv.Itoa(order.GoodsNum))
-	params.Add("goods_note", order.GoodsNote)
-	params.Add("remark", order.Remark)
-	params.Add("timestamp", fmt.Sprintf("%d", order.TimeStamp))
+	if order.GoodsName != "" {
+		params.Add("goods_name", order.GoodsName)
+	}
+	if order.GoodsNum > 0 {
+		params.Add("goods_num", strconv.Itoa(order.GoodsNum))
+	}
+	if order.GoodsNote != "" {
+		params.Add("goods_note", order.GoodsNote)
+	}
+	if order.Remark != "" {
+		params.Add("remark", order.Remark)
+	}
+	if order.TimeStamp > 0 {
+		params.Add("timestamp", fmt.Sprintf("%d", order.TimeStamp))
+	}
+	if metaOption != "" {
+		params.Add("meta_option", metaOption)
+	}
 	params.Add("expire_time", fmt.Sprintf("%d", order.ExpireTime))
-	params.Add("meta_option", metaOption)
 	params.Add("sign_type", SIGN_TYPE)
 	params.Add("sign", sign)
 
