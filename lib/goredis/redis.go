@@ -22,6 +22,11 @@ var (
 	ctx           = context.Background()
 )
 
+// init 初始化dbs的map，后续不再重置
+func init() {
+	dbs = make(map[string]*redis.Client)
+}
+
 // RedisConfig redis 连接配置
 type RedisConfig struct {
 	Name     string //连接名
@@ -39,9 +44,13 @@ func InitDefaultDB(db *RedisConfig) (err error) {
 		return
 	}
 	defaultDBName = db.Name
-	dbs = make(map[string]*redis.Client, 1)
 	newRedis(db)
 	return
+}
+
+// GetDBNames 返回所有链接
+func GetDBNames() map[string]*redis.Client {
+	return dbs
 }
 
 // GetRDB returns a *redis.Client
@@ -59,7 +68,6 @@ func InitDB(list []*RedisConfig) (err error) {
 		err = fmt.Errorf("[redis] 没有需要init的DB")
 		return
 	}
-	dbs = make(map[string]*redis.Client, len(list))
 	for _, item := range list {
 		newRedis(item)
 	}
@@ -74,6 +82,11 @@ func GetRDBByName(name string) *redis.Client {
 		logx.Panic("[redis] 未init，请参照使用说明")
 	}
 	return m
+}
+
+// GetDBS get dbs from map
+func GetDBS() map[string]*redis.Client {
+	return dbs
 }
 
 /*

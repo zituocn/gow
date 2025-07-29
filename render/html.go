@@ -44,7 +44,7 @@ var (
 	htmlContentType = []string{"text/html; charset=utf-8"}
 )
 
-//HTMLRender a simple html render
+// HTMLRender a simple html render
 type HTMLRender struct {
 	ViewPath   string
 	Name       string
@@ -159,7 +159,7 @@ func ExecuteViewPathTemplate(wr io.Writer, name string, viewPath string, runMode
 	panic("Unknown view path:" + viewPath)
 }
 
-// AddFuncMap let user to register a func in the template.
+// AddFuncMap let user to reg a func in the template.
 func AddFuncMap(key string, fn interface{}) error {
 	templateFuncMap[key] = fn
 	return nil
