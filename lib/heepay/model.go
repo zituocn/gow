@@ -21,6 +21,7 @@ type PaymentOrder struct {
 	TimeStamp     int64           // 选填 时间戳,北京时间1970/1/1 0点到现在的毫秒值,订单在+-1min内有效,超过时间订单不能提交,如果传此参数，此参数也需要参与签名，参数加在key后面
 	ExpireTime    int             // 选填 订单过期相对时间，单位分钟，最低1分钟，最高4320分钟(服务器收到请求开始计时)
 	MetaOption    string          // 微信小程序:必填,{"s":"微信小程序","n":"","id":""} n:网站名称或者产品名称 id:网址,参与签名;支付宝wap:选填,{"is_guarantee":"1"} is_guarantee=1代表分润单
+	TradeType     string          // 云闪付APP:必填，值app
 }
 
 // TokenResponse 成功响应结构

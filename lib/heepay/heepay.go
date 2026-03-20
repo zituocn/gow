@@ -24,7 +24,7 @@ import (
 
 const (
 	WX_MINI_TRADE_URL = "https://pay.heepay.com/Phone/SDK/PayInit.aspx"
-	ALI_WAP_TRADE_URL = "https://pay.heepay.com/Payment/Index.aspx"
+	PAYMENT_INDEX_URL = "https://pay.heepay.com/Payment/Index.aspx"
 	ORDER_QUERY_URL   = "https://query.heepay.com/Payment/Query.aspx"
 	REFUND_URL        = "https://pay.heepay.com/API/Payment/PaymentRefund.aspx"
 	REFUND_QUERY_URL  = "https://Query.heepay.com/API/Payment/PaymentRefundQuery.aspx"
@@ -32,6 +32,7 @@ const (
 	IS_PHONE          = "1"
 	VERSION           = "1"
 	RETURN_MODE       = "1"
+	UnionAppTrade     = "app"
 )
 
 type Heepay struct {
@@ -182,7 +183,141 @@ func (h *Heepay) AliWapTrade(order *PaymentOrder) (payUrl string, err error) {
 	params.Add("sign_type", SIGN_TYPE)
 	params.Add("sign", sign)
 
-	payUrl = ALI_WAP_TRADE_URL + "?" + params.Encode()
+	payUrl = PAYMENT_INDEX_URL + "?" + params.Encode()
+	return
+}
+
+// UnionAPPTrade payUrl: 前端访问的支付地址
+func (h *Heepay) UnionAPPTrade(order *PaymentOrder) (tn string, err error) {
+	err = h.ValidatePayAmt(order.PayAmt)
+	if err != nil {
+		return
+	}
+
+	signStr := fmt.Sprintf("version=%s&agent_id=%s&agent_bill_id=%s&agent_bill_time=%s&pay_type=%d&pay_amt=%s&notify_url=%s&return_url=%s&user_ip=%s&key=%s",
+		VERSION, h.AgentID, order.AgentBillID, order.AgentBillTime, order.PayType, order.PayAmt.String(), order.NotifyURL, order.ReturnURL, order.UserIP, h.PayKey)
+	if order.TimeStamp != 0 {
+		signStr += fmt.Sprintf("&timestamp=%d", order.TimeStamp)
+	}
+	signStr = strings.ReplaceAll(signStr, " ", "")
+	sign := util.MD5(signStr)
+
+	params := url.Values{}
+	params.Add("version", VERSION)
+	params.Add("trade_type", UnionAppTrade)
+	params.Add("agent_id", h.AgentID)
+	params.Add("agent_bill_id", order.AgentBillID)
+	params.Add("agent_bill_time", order.AgentBillTime)
+	params.Add("pay_type", strconv.Itoa(order.PayType))
+	params.Add("pay_amt", order.PayAmt.String())
+	params.Add("notify_url", order.NotifyURL)
+	params.Add("return_url", order.ReturnURL)
+	params.Add("user_ip", order.UserIP)
+	if order.GoodsName != "" {
+		params.Add("goods_name", order.GoodsName)
+	}
+	if order.GoodsNum > 0 {
+		params.Add("goods_num", strconv.Itoa(order.GoodsNum))
+	}
+	if order.GoodsNote != "" {
+		params.Add("goods_note", order.GoodsNote)
+	}
+	if order.Remark != "" {
+		params.Add("remark", order.Remark)
+	}
+	if order.TimeStamp > 0 {
+		params.Add("timestamp", fmt.Sprintf("%d", order.TimeStamp))
+	}
+	params.Add("expire_time", fmt.Sprintf("%d", order.ExpireTime))
+	params.Add("sign_type", SIGN_TYPE)
+	params.Add("sign", sign)
+
+	payUrl := PAYMENT_INDEX_URL + "?" + params.Encode()
+
+	response, err := http.Get(payUrl)
+	if err != nil {
+		return
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+
+	//agent_id=2353065|agent_bill_id=hup20260212092328091243|jnet_bill_no=H2602125081189A3|pay_type=34|result=1|pay_message=����ɹ�|tn=604089394184664197204|remark=|sign=f9051b4130daf08357e650caeb9415af
+	respStr := string(body)
+	array := strings.Split(respStr, "|")
+	for _, item := range array {
+		if strings.Contains(item, "tn") {
+			tn = strings.Replace(item, "tn=", "", -1)
+		}
+	}
+	return
+}
+
+func (h *Heepay) UnionH5Trade(order *PaymentOrder) (payUrl string, err error) {
+	err = h.ValidatePayAmt(order.PayAmt)
+	if err != nil {
+		return
+	}
+
+	signStr := fmt.Sprintf("version=%s&agent_id=%s&agent_bill_id=%s&agent_bill_time=%s&pay_type=%d&pay_amt=%s&notify_url=%s&return_url=%s&user_ip=%s&key=%s",
+		VERSION, h.AgentID, order.AgentBillID, order.AgentBillTime, order.PayType, order.PayAmt.String(), order.NotifyURL, order.ReturnURL, order.UserIP, h.PayKey)
+	if order.TimeStamp != 0 {
+		signStr += fmt.Sprintf("&timestamp=%d", order.TimeStamp)
+	}
+	signStr = strings.ReplaceAll(signStr, " ", "")
+	sign := util.MD5(signStr)
+
+	var metaOption string
+	if order.MetaOption != "" {
+		encoder := simplifiedchinese.GBK.NewEncoder()
+		gbkReader := transform.NewReader(
+			bytes.NewReader([]byte(order.MetaOption)),
+			encoder,
+		)
+		gbkBytes, err := io.ReadAll(gbkReader)
+		if err != nil {
+			return "", err
+		}
+		metaOption = base64.StdEncoding.EncodeToString(gbkBytes)
+	}
+
+	params := url.Values{}
+	params.Add("version", VERSION)
+	params.Add("is_phone", IS_PHONE)
+	params.Add("pay_type", strconv.Itoa(order.PayType))
+	params.Add("agent_id", h.AgentID)
+	params.Add("agent_bill_id", order.AgentBillID)
+	params.Add("agent_bill_time", order.AgentBillTime)
+	params.Add("pay_amt", order.PayAmt.String())
+	params.Add("notify_url", order.NotifyURL)
+	params.Add("return_url", order.ReturnURL)
+	params.Add("user_ip", order.UserIP)
+	if order.GoodsName != "" {
+		params.Add("goods_name", order.GoodsName)
+	}
+	if order.GoodsNum > 0 {
+		params.Add("goods_num", strconv.Itoa(order.GoodsNum))
+	}
+	if order.GoodsNote != "" {
+		params.Add("goods_note", order.GoodsNote)
+	}
+	if order.Remark != "" {
+		params.Add("remark", order.Remark)
+	}
+	if order.TimeStamp > 0 {
+		params.Add("timestamp", fmt.Sprintf("%d", order.TimeStamp))
+	}
+	if metaOption != "" {
+		params.Add("meta_option", metaOption)
+	}
+	params.Add("expire_time", fmt.Sprintf("%d", order.ExpireTime))
+	params.Add("sign_type", SIGN_TYPE)
+	params.Add("sign", sign)
+
+	payUrl = PAYMENT_INDEX_URL + "?" + params.Encode()
 	return
 }
 
